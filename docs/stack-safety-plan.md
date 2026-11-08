@@ -74,17 +74,35 @@
 
 ### 3.5 验证
 
-- `pulse_wndproc_guard_test`：12 passed, 0 failed（24/25 边界、拒绝后计数不残留、
-  复位、峰值）。
-- `cmake --build build --target pulse`：通过，无新增告警。
-- **未做**：GUI 端到端触发测试（需要启动并操作窗口，会动到本地会话状态）。临时把
-  `kWndProcDepthLimit` 改成 1 再跑一次、看诊断日志出现 `wndproc_depth_dropped`，
-  是下一步最直接的补验方式。
+**单元测试**：`pulse_wndproc_guard_test` 12 passed, 0 failed（24/25 边界、拒绝后计数
+不残留、复位、峰值）。`cmake --build build --target pulse` 通过，无新增告警。
+
+**端到端**（2026-11-08，Release，local profile）：
+
+| 构建 | 运行 | 结果 |
+|---|---|---|
+| 上限临时改成 1 | `pulse.exe --shot <temp>.png` | 28 条 `wndproc_depth_dropped`，全部 `depth=2`；进程正常走到 `process_stop` |
+| 上限 24 | 同上 | 0 条 `wndproc_depth_dropped`、0 条 `wndproc_depth_peak` |
+| 改动前基线（`4174309`） | 同上 | 无相关事件，行为一致 |
+
+被真实触发的嵌套消息是 `WM_SETTEXT`、`WM_GETMINMAXINFO`、`WM_WINDOWPOSCHANGING`、
+`WM_NCCALCSIZE`、`WM_WINDOWPOSCHANGED`、`WM_SETFOCUS`——都在启动阶段、深度 2。也就是说
+正常路径只嵌套到 2 层，24 这个上限有充分余量。
+
+**未覆盖**：
+
+- 崩溃 JSON 里 category 2/3 的深度链（需要在 `WndProcImpl` 里制造一次真实崩溃）。
+- `--shot` 模式的退出码不稳定：4 次运行里 3 次以 `0xC0000005` 结束，**包括改动前的
+  基线构建**，且都发生在 `process_stop` 之后，与护栏无关，属于既有的退出阶段问题，
+  需要单独排查。
 
 ### 3.6 已知降级
 
 - 触发上限意味着已经在病态重入里，丢一条消息远好于崩溃；但 `WM_LBUTTONUP` 被丢
   可能留下 `SetCapture`，`WM_NCCALCSIZE` 返回 0 会让那次布局等下一次尺寸变化纠正。
+- 上限 1 的实验说明丢消息本身不会立刻让应用崩溃（启动、渲染、退出都完成了），但
+  丢掉的正是 `WM_SETTEXT`/`WM_NCCALCSIZE` 这类消息；它们正常只在深度 2 出现，24 层
+  的护栏不会碰到，只有在已经失控的链路上才会。
 - 护栏不修复触发链，只把"崩溃"降级为"一次可诊断的丢消息"。
 
 ## 4. 阶段 2：大栈帧 CI 检查（未开始）
