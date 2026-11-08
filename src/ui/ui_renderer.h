@@ -28,6 +28,7 @@ class MainRenderer {
     friend struct FolderSizesUiTest;
     friend struct ColumnResizeUiTest;
     friend struct UiModuleAuditTest;
+    friend struct TreePlateDamageTest;
 public:
     MainRenderer();
     // Draws from caches shared with other windows (AppCore::render_caches).
