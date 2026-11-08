@@ -3,6 +3,7 @@
 #include "../common/localization.h"
 #include "pulse_release_notes.h"
 #include "pulse_version.h"
+#include "system_info.h"
 
 #include <cmath>
 #include <cstdio>
@@ -106,40 +107,8 @@ std::wstring BuildTimeText() {
 }
 
 const std::wstring& WindowsText() {
-    static const std::wstring text = [] {
-        wchar_t product[128]{}, display[64]{}, build[32]{};
-        DWORD ubr = 0;
-        HKEY key = nullptr;
-        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", 0,
-                          KEY_READ | KEY_WOW64_64KEY, &key) == ERROR_SUCCESS) {
-            DWORD size = sizeof(product);
-            RegGetValueW(key, nullptr, L"ProductName", RRF_RT_REG_SZ, nullptr, product, &size);
-            size = sizeof(display);
-            if (RegGetValueW(key, nullptr, L"DisplayVersion", RRF_RT_REG_SZ, nullptr, display, &size) != ERROR_SUCCESS) {
-                size = sizeof(display);
-                RegGetValueW(key, nullptr, L"ReleaseId", RRF_RT_REG_SZ, nullptr, display, &size);
-            }
-            size = sizeof(build);
-            RegGetValueW(key, nullptr, L"CurrentBuildNumber", RRF_RT_REG_SZ, nullptr, build, &size);
-            size = sizeof(ubr);
-            RegGetValueW(key, nullptr, L"UBR", RRF_RT_REG_DWORD, nullptr, &ubr, &size);
-            RegCloseKey(key);
-        }
-        std::wstring name = *product ? product : L"Windows";
-        // ProductName still says "Windows 10" on Windows 11.
-        if (wcstoul(build, nullptr, 10) >= 22000) {
-            const size_t at = name.find(L"Windows 10");
-            if (at != std::wstring::npos) name.replace(at, 10, L"Windows 11");
-        }
-        if (*display) name += L" " + std::wstring(display);
-        if (*build) {
-            name += L" (" + std::wstring(build);
-            if (ubr) name += L"." + std::to_wstring(ubr);
-            name += L")";
-        }
-        return name;
-    }();
-    return text;
+    // Shared with the details panel's 此电脑 card (system_info.cpp).
+    return OsText();
 }
 
 std::wstring InstallDirectory() {
