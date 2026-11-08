@@ -29,6 +29,7 @@
 #include <deque>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -688,6 +689,12 @@ enum class TrayShelfHit : int {
 struct DetailsPanelView {
     bool is_link = false;
     bool has_selection = false;
+    // Nothing is selected: the panel describes the current folder itself, or
+    // the machine while the tab sits at 此电脑. A card has facts but no
+    // actions, so its buttons, toggles and sections are never laid out.
+    bool context = false;
+    bool pc_card = false;           // context card is 此电脑 => system facts
+    std::vector<std::pair<std::wstring, std::wstring>> context_rows; // label, value
     int multi_count = 0;            // >1 => multi-selection summary mode
     std::wstring name, path, type_text;
     std::wstring subtitle_text;     // under-name line: type · size short form

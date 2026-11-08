@@ -23,6 +23,8 @@
 #include "app_hosted_edit.h"
 #include "app_navigation.h"
 #include "app_runtime.h"
+#include "details_info.h"
+#include "system_info.h"
 #include "app_sidebar_refresh.h"
 #include "../ui/address_search_layout.h"
 #include "../ui/layer_alphas.h"
@@ -9394,6 +9396,62 @@ void TestDetailsPreviewInteraction() {
     SetEnvironmentVariableW(L"PULSE_TEST_DATA_DIR", previous[0] ? previous : nullptr);
 }
 
+namespace {
+
+// Details panel: with nothing selected the panel describes the current folder,
+// or the machine while the tab sits at 此电脑. Virtual views keep the standard
+// empty-state illustration.
+bool RunDetailsInfoCardTest() {
+    const int before = g_fail;
+    {
+        ui::DetailsPanelView view;
+        DetailsInfoInput input;
+        input.this_pc = true;
+        FillDetailsInfo(input, view);
+        Check(view.has_selection && view.context && view.pc_card,
+            L"this pc card: uses the selection layout path");
+        Check(view.name == l10n::Get(l10n::StringId::ThisPc), L"this pc card: title is 此电脑");
+        Check(view.context_rows.size() == 5, L"this pc card: five facts");
+        bool filled = true;
+        for (const auto& row : view.context_rows)
+            filled = filled && !row.first.empty() && !row.second.empty();
+        Check(filled, L"this pc card: every fact has a label and a value");
+        Check(view.context_rows.front().second == Facts().os_name,
+            L"this pc card: OS row shares the About page's text");
+    }
+    {
+        ui::DetailsPanelView view;
+        DetailsInfoInput input;
+        input.folder_path = L"C:\\Users";
+        input.entries = 12;
+        input.size_bytes = 4096;
+        FillDetailsInfo(input, view);
+        Check(view.context && !view.pc_card && view.is_dir,
+            L"folder card: describes the folder, not the machine");
+        Check(view.name == L"Users", L"folder card: leaf name");
+        Check(view.context_rows.size() == 3, L"folder card: location, size and item count");
+        Check(view.context_rows[1].second.find(L"\u2014") == std::wstring::npos,
+            L"folder card: a cached walk result fills the size");
+        Check(view.context_rows[2].second.find(L"12") == 0,
+            L"folder card: item count comes from the listing");
+    }
+    {
+        ui::DetailsPanelView view;
+        DetailsInfoInput input;
+        input.folder_path = L"D:\\";
+        FillDetailsInfo(input, view);
+        Check(view.name == L"D:", L"folder card: a drive root reads as its letter");
+        Check(view.context_rows[1].second == L"\u2014", L"folder card: no cached size shows a dash");
+        Check(view.context_rows[2].second.find(L"0") == 0, L"folder card: an empty listing counts zero");
+    }
+    Check(DetailsInfoAppliesTo(L"C:\\Windows"), L"card: a real folder takes the card");
+    Check(!DetailsInfoAppliesTo(L""), L"card: an empty path is 此电脑");
+    Check(!DetailsInfoAppliesTo(L"pulse:recycle"), L"card: a virtual view keeps the empty state");
+    return g_fail == before;
+}
+
+} // namespace
+
 int RunSelfTest1B2() {
     // These model assertions use the Chinese resource strings explicitly.
     l10n::Initialize(GetModuleHandleW(nullptr), L"zh-CN");
@@ -9409,6 +9467,15 @@ int RunSelfTest1B2() {
     FILE* g_log_local = nullptr;
     g_log = _wfopen_s(&g_log_local, kLogPath.c_str(), L"w, ccs=UTF-8") == 0
         ? g_log_local : nullptr;
+
+    wchar_t details_card_case[64]{};
+    if (GetEnvironmentVariableW(L"PULSE_SELFTEST_CASE", details_card_case,
+                                ARRAYSIZE(details_card_case)) &&
+        wcscmp(details_card_case, L"details-info-card") == 0) {
+        const bool passed = RunDetailsInfoCardTest();
+        if (g_log) { fclose(g_log); g_log = nullptr; }
+        return passed ? 0 : 1;
+    }
 
     wchar_t tag_delete_case[64]{};
     if (GetEnvironmentVariableW(L"PULSE_SELFTEST_CASE", tag_delete_case, ARRAYSIZE(tag_delete_case)) &&

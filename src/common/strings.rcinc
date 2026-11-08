@@ -4415,6 +4415,10 @@ BEGIN
     IDS_STATUS_HINT_SELECTED_NO_PREVIEW "Enter 打开  ·  F2 重命名"
     IDS_HINT_FOLDER_SEL_NO_PREVIEW "Enter 打开  ·  中键 后台新标签页"
     IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW "Enter 打开"
+    IDS_DETAILS_SYS_VERSION "系统版本"
+    IDS_DETAILS_COMPUTER_NAME "计算机名"
+    IDS_DETAILS_PROCESSOR "处理器"
+    IDS_DETAILS_MEMORY "内存"
 END
 
 LANGUAGE 0x09, 0x01
@@ -8829,6 +8833,10 @@ BEGIN
     IDS_STATUS_HINT_SELECTED_NO_PREVIEW "Enter open  ·  F2 rename"
     IDS_HINT_FOLDER_SEL_NO_PREVIEW "Enter open  ·  Middle-click new background tab"
     IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW "Enter open"
+    IDS_DETAILS_SYS_VERSION "System version"
+    IDS_DETAILS_COMPUTER_NAME "Computer name"
+    IDS_DETAILS_PROCESSOR "Processor"
+    IDS_DETAILS_MEMORY "Memory"
 END
 
 // Traditional Chinese (Taiwan), generated from the Simplified entries above.

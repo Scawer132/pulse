@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- 左上窗格 -->
+  <rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="#73a5e5" stroke="#2d5b87" stroke-width="1.5" stroke-linejoin="round" />
+  <!-- 右上窗格 -->
+  <rect x="13.5" y="1.5" width="9" height="9" rx="1" fill="#73a5e5" stroke="#2d5b87" stroke-width="1.5" stroke-linejoin="round" />
+  <!-- 左下窗格 -->
+  <rect x="1.5" y="13.5" width="9" height="9" rx="1" fill="#73a5e5" stroke="#2d5b87" stroke-width="1.5" stroke-linejoin="round" />
+  <!-- 右下窗格 -->
+  <rect x="13.5" y="13.5" width="9" height="9" rx="1" fill="#73a5e5" stroke="#2d5b87" stroke-width="1.5" stroke-linejoin="round" />
+</svg>

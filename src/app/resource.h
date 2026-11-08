@@ -32,3 +32,5 @@
 #define IDR_FLUENT_VIDEOS_SVG 130
 #define IDR_FLUENT_MUSIC_SVG 131
 #define IDR_FLUENT_DOCUMENTS_SVG 132
+// OS logo for the details panel's 此电脑 card (not a Fluent glyph).
+#define IDR_WINDOWS_OS_SVG 133

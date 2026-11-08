@@ -4440,3 +4440,7 @@ StatusHintIdleNoPreviewNoSearch	IDS_STATUS_HINT_IDLE_NO_PREVIEW_NO_SEARCH	5640	C
 StatusHintSelectedNoPreview	IDS_STATUS_HINT_SELECTED_NO_PREVIEW	5641	Enter 打开  ·  F2 重命名	Enter open  ·  F2 rename	
 HintFolderSelNoPreview	IDS_HINT_FOLDER_SEL_NO_PREVIEW	5642	Enter 打开  ·  中键 后台新标签页	Enter open  ·  Middle-click new background tab	
 HintSearchResultSelNoPreview	IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW	5643	Enter 打开	Enter open	
+DetailsSysVersion	IDS_DETAILS_SYS_VERSION	5644	系统版本	System version	系統版本
+DetailsComputerName	IDS_DETAILS_COMPUTER_NAME	5645	计算机名	Computer name	電腦名稱
+DetailsProcessor	IDS_DETAILS_PROCESSOR	5646	处理器	Processor	處理器
+DetailsMemory	IDS_DETAILS_MEMORY	5647	内存	Memory	記憶體

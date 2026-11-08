@@ -4433,5 +4433,9 @@
 #define IDS_STATUS_HINT_SELECTED_NO_PREVIEW                                              5641
 #define IDS_HINT_FOLDER_SEL_NO_PREVIEW                                                   5642
 #define IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW                                            5643
+#define IDS_DETAILS_SYS_VERSION                                                          5644
+#define IDS_DETAILS_COMPUTER_NAME                                                        5645
+#define IDS_DETAILS_PROCESSOR                                                            5646
+#define IDS_DETAILS_MEMORY                                                               5647
 
 #endif  // PULSE_STRING_IDS_H

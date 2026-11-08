@@ -4425,6 +4425,10 @@ enum class StringId : UINT {
     StatusHintSelectedNoPreview = IDS_STATUS_HINT_SELECTED_NO_PREVIEW,
     HintFolderSelNoPreview = IDS_HINT_FOLDER_SEL_NO_PREVIEW,
     HintSearchResultSelNoPreview = IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW,
+    DetailsSysVersion = IDS_DETAILS_SYS_VERSION,
+    DetailsComputerName = IDS_DETAILS_COMPUTER_NAME,
+    DetailsProcessor = IDS_DETAILS_PROCESSOR,
+    DetailsMemory = IDS_DETAILS_MEMORY,
 };
 
 bool IsLanguageId(std::wstring_view id) noexcept;
