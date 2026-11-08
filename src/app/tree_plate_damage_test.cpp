@@ -9,12 +9,12 @@
 namespace pulse::ui {
 
 // The details tree needs every visible row sampled each frame so
-// ListShiftMotion can diff one whole frame against the next. A plate-only
-// frame samples just the hovered row, so the next small list change (an
-// inline folder expand) reads every row as new and flashes the pane; panes
-// drawing tree guides therefore take whole frames while plates glide
-// (HoverMotionDamage). These checks pin that rule and keep plate-only
-// frames working everywhere else.
+// ListShiftMotion can diff one whole frame against the next; ListShiftMotion
+// keeps the rows a partial frame never sampled at their last drawn position
+// (ui_motion.h), so plate-only frames are safe in a pane drawing tree guides.
+// What is not safe is a hover *change* in such a pane: the accent line and
+// chevron follow the hovered row's folder, so that frame stays a whole one
+// (HoverRowDamage). These checks pin both rules.
 struct TreePlateDamageTest {
     static bool Run() {
         const HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -104,9 +104,23 @@ struct TreePlateDamageTest {
             check(plate_only_damage(plain, 0),
                   "a plain pane still reports plate-only damage while its plate glides");
 
+            D2D1_RECT_F row_span{};
+            check(plate_only_damage(plain, 0) && renderer.HoverRowDamage(0, 0, 1, &row_span),
+                  "a hover change in a plain pane repaints just its two rows");
+
+            // A tree pane glides on plate-only frames (the guides do not move
+            // with the plate). A hover change between two rows of the same
+            // folder keeps the accent where it is, so it is a row repaint too;
+            // moving into another folder's row moves the accent line.
             PaneViewModel tree = make_pane(L"tree", tree_rows());
-            check(!plate_only_damage(tree, 0),
-                  "a pane drawing tree guides takes whole frames while its own plate glides");
+            check(plate_only_damage(tree, 0),
+                  "a pane drawing tree guides keeps plate-only frames while its plate glides");
+            D2D1_RECT_F same_folder{};
+            check(renderer.HoverRowDamage(0, 0, 2, &same_folder),
+                  "a hover change inside one folder repaints just its rows");
+            D2D1_RECT_F other_folder{};
+            check(!renderer.HoverRowDamage(0, 0, 1, &other_folder),
+                  "a hover change into another folder's row takes a whole frame");
 
             // Nothing expanded: every row is depth 0 and no guide line is
             // drawn, so the pane must keep the plate-only path. This is the
@@ -127,14 +141,15 @@ struct TreePlateDamageTest {
                   "a details pane with nothing expanded draws no guide, so its plate keeps plate-only frames");
 
             // Split layout: the plate glides in the plain pane while nobody
-            // hovers the tree pane, whose rows the damage test skips all the same.
+            // hovers the tree pane, whose rows the damage test skips all the
+            // same (ListShiftMotion keeps their last drawn positions).
             PaneViewModel split_tree = make_pane(L"split tree", tree_rows());
             PaneViewModel split_plain = make_pane(L"split plain", nullptr);
             const bool frames_drawn = draw(split_tree, 0, -1) && draw(split_plain, 1, 0) &&
                                       draw(split_plain, 1, 1);
             D2D1_RECT_F span{};
-            check(frames_drawn && !renderer.HoverMotionDamage(&span),
-                  "a tree pane takes whole frames while another pane's plate glides");
+            check(frames_drawn && renderer.HoverMotionDamage(&span),
+                  "a tree pane keeps plate-only frames while another pane's plate glides");
         }
         if (hwnd) DestroyWindow(hwnd);
         CoUninitialize();

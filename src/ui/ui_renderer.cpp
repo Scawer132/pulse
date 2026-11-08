@@ -1080,8 +1080,19 @@ bool MainRenderer::PartialRedrawSafe(const WindowViewModel& vm) const {
 bool MainRenderer::HoverRowDamage(int pane_index, int old_source, int new_source,
                                   D2D1_RECT_F* out) const {
     if (!out || pane_index < 0 || pane_index >= static_cast<int>(drawn_rows_.size())) return false;
-    if (tree_guides_drawn_[static_cast<size_t>(pane_index)]) return false;
-    const auto& rows = drawn_rows_[static_cast<size_t>(pane_index)];
+    const size_t slot = static_cast<size_t>(pane_index);
+    if (tree_guides_drawn_[slot]) {
+        // The accent line and the hovered row's folder chevron follow the
+        // pointer: a change between two rows of the same folder leaves every
+        // guide pixel where it was, so the rows of the two hovers are all this
+        // frame repaints. Any other change (another folder, leaving the list)
+        // moves the accent to another row and needs the whole window.
+        const auto& tree = drawn_tree_[slot];
+        if (!tree || old_source < 0 || new_source < 0) return false;
+        if (tree->ParentRow(tree->ViewOf(old_source)) != tree->ParentRow(tree->ViewOf(new_source)))
+            return false;
+    }
+    const auto& rows = drawn_rows_[slot];
     if (rows.empty()) return false;
     D2D1_RECT_F r{};
     bool any = false;
@@ -1102,15 +1113,11 @@ bool MainRenderer::HoverRowDamage(int pane_index, int old_source, int new_source
 bool MainRenderer::HoverMotionDamage(D2D1_RECT_F* out) const {
     if (!out) return false;
     const uint64_t m = motion::NowMs();
-    // A plate-only frame samples just the plate's row, so a pane that draws
-    // tree guides loses every row of its ListShiftMotion baseline and the
-    // next small list change (an inline folder expand) reads them all as new
-    // and flashes the pane. Split layouts count too: the gliding plate may
-    // sit in another pane while this one's rows are all skipped (DrawPane
-    // walks every slot; only the row loop honors the damage). Same rule as
-    // HoverRowDamage above.
-    for (size_t i = 0; i < tree_guides_drawn_.size(); ++i)
-        if (tree_guides_drawn_[i]) return false;
+    // A plate-only frame redraws just the plate's path. Nothing else in the
+    // window changes while a plate glides: the tree guides (and the accent on
+    // the hovered row's folder) are built from the hovered row, which a glide
+    // does not move, and a hover *change* in a tree pane is a whole frame
+    // (HoverRowDamage), so the accent never flips inside a plate-only one.
     D2D1_RECT_F r{};
     bool any = false;
     for (size_t i = 0; i < list_hover_motion_.size(); ++i) {
@@ -1235,7 +1242,23 @@ void MainRenderer::Render(const WindowViewModel& vm, const D2D1_RECT_F& rect,
         tint_background({rect.left, sheetTop, rect.right, rect.bottom}, theme.surface_sheet, sheet_alpha_);
     }
 
-    if (!embedded_) DrawTitleBar(vm, rect, theme);
+    // A partial frame repaints only its damage. A section whose band misses
+    // the damage cannot change inside it - PartialRedrawSafe only lets a frame
+    // be partial while nothing but the hover plates moves - so it is skipped
+    // whole: the chrome costs more than the two rows a plate repaints.
+    const auto clear_of_damage = [&](const D2D1_RECT_F& band) {
+        if (!frame_partial_) return false;
+        const float m = 8.0f * scale_;
+        return band.bottom + m <= frame_damage_.top || band.top - m >= frame_damage_.bottom ||
+               band.right + m <= frame_damage_.left || band.left - m >= frame_damage_.right;
+    };
+    const D2D1_RECT_F title_band = TitleBarRect(rect.right);
+    const D2D1_RECT_F toolbar_band = D2D1::RectF(rect.left, title_bar_height_, rect.right,
+                                                 ContentRect(rect.right, rect.bottom).top);
+    const D2D1_RECT_F sidebar_band = SidebarRect(rect.right, rect.bottom);
+    const D2D1_RECT_F status_band = D2D1::RectF(rect.left, rect.bottom - status_height_, rect.right,
+                                                rect.bottom);
+    if (!embedded_ && !clear_of_damage(title_band)) DrawTitleBar(vm, rect, theme);
     // Over a wallpaper or Mica the docked AI panel is a card like the pane.
     ai_panel_.SetGlass(!embedded_ && card_alpha_ < 0.999f && !IsHighContrast(), card_alpha_,
                        CardFrameColor(theme, vm.dark, card_alpha_));
@@ -1254,10 +1277,12 @@ void MainRenderer::Render(const WindowViewModel& vm, const D2D1_RECT_F& rect,
         }
         DrawStatusBar(vm, rect, theme);
     } else {
-        DrawToolbar(vm, rect, theme);
-        if (favorites_bar_) DrawFavoritesBar(vm, rect, theme);
+        if (!clear_of_damage(toolbar_band)) {
+            DrawToolbar(vm, rect, theme);
+            if (favorites_bar_) DrawFavoritesBar(vm, rect, theme);
+        }
         const bool peek = SidebarPeekVisible(rect.right);
-        if (!peek) DrawSidebar(vm, rect, theme);
+        if (!peek && !clear_of_damage(sidebar_band)) DrawSidebar(vm, rect, theme);
         DrawPane(vm, rect, theme);
         if (vm.details_visible) DrawDetailsPanel(vm, rect, theme);
         else preview_handler_.Sync(notify_hwnd_, {}, L"", 0, 0, 0, 0, vm.dark,
@@ -1268,7 +1293,7 @@ void MainRenderer::Render(const WindowViewModel& vm, const D2D1_RECT_F& rect,
                            AiFloatingArea(rect.right, rect.bottom), scale_, motion_now_);
         }
         if (peek) DrawSidebarPeek(vm, rect, theme);
-        if (!embedded_) DrawStatusBar(vm, rect, theme);
+        if (!embedded_ && !clear_of_damage(status_band)) DrawStatusBar(vm, rect, theme);
         if (!peek) DrawTrayCompareCard(vm, theme);
     }
 

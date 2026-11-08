@@ -1198,9 +1198,14 @@ private:
     std::unordered_map<int, D2D1_RECT_F> drawn_sidebar_slots_;
     // The toolbar's plated controls as drawn last frame (PlateKey, rect).
     std::unordered_map<int64_t, D2D1_RECT_F> drawn_toolbar_controls_;
-    // Panes whose last frame drew tree guides: a hover moves the highlighted
-    // line, which spans rows outside the two that changed.
+    // Panes whose last frame drew tree guides: the accent line follows the
+    // hovered row's folder and spans rows outside the two a hover change
+    // repaints, so HoverRowDamage asks whether that folder stays the same.
     std::array<bool, 8> tree_guides_drawn_{};
+    // The details tree of the pane's last drawn frame (row facts, no pixels):
+    // HoverRowDamage reads it to tell whether a hover change moves the
+    // highlighted guide (the hovered row's folder).
+    std::array<std::shared_ptr<const DetailsTreeRows>, 8> drawn_tree_{};
     bool OverlayUp(const WindowViewModel& vm) const;
     bool NonHoverMotionActive() const;
     mutable std::vector<D2D1_RECT_F> landing_rects_;   // this frame's landing rows (window px)

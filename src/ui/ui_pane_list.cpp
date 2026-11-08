@@ -4568,6 +4568,7 @@ void MainRenderer::DrawList(const PaneViewModel& vm, float x, float y, float w, 
         for (const TreeGuideRow& guide : tree_guides.rows)
             if (guide.through != 0 || guide.join >= 0) { guides_drawn = true; break; }
         tree_guides_drawn_[static_cast<size_t>(pane_index)] = guides_drawn;
+        drawn_tree_[static_cast<size_t>(pane_index)] = vm.tree;
     }
     const auto drawTreeChevron = [&](const DetailsTreeRow& tr, const D2D1_RECT_F& cell, float baseX,
                                      bool strong, bool accent) {
