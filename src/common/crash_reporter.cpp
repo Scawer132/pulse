@@ -49,8 +49,12 @@ struct DiagnosticEvent {
     uint64_t modified = 0;
 };
 
-Config g_config;
-std::wstring g_diagnostics_root;
+// Never destroyed: an exception during exit()'s static destructors must still
+// be able to name its data root, and that is exactly the window in which the
+// l10n tables are already gone (see localization.cpp). The namespace-scope
+// references below have no destructor of their own.
+Config& g_config = *new Config;
+std::wstring& g_diagnostics_root = *new std::wstring;
 std::array<Breadcrumb, kBreadcrumbCount> g_breadcrumbs;
 std::atomic<uint64_t> g_breadcrumb_sequence{0};
 std::atomic<long> g_report_active{0};
