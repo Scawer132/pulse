@@ -8,6 +8,7 @@ on:
       - 'tools/l10n/**'
       - 'tools/zh_tw/**'
       - 'tools/actions/**'
+      - 'tools/ci/**'
       - '.github/workflows/l10n.yml'
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - 'tools/l10n/**'
       - 'tools/zh_tw/**'
       - 'tools/actions/**'
+      - 'tools/ci/**'
       - '.github/workflows/l10n.yml'
 
 jobs:
@@ -35,3 +37,19 @@ jobs:
         run: python tools/l10n/check_no_pick.py
       - name: Every action is registered for menus, palette and the assistant
         run: python tools/actions/check_actions.py --strict
+
+  stack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The check compares the change with its base, so it needs history.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: No new large stack arrays in UI modules
+        env:
+          # PRs compare with the target branch; pushes with the previous tip.
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: python tools/ci/check_stack_arrays.py --base "$BASE"
