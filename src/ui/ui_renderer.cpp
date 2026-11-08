@@ -1052,10 +1052,12 @@ bool MainRenderer::OverlayUp(const WindowViewModel& vm) const {
 }
 
 bool MainRenderer::NonHoverMotionActive() const {
-    // TickMotion without the list hover plates.
+    // TickMotion without the hover plates: the list plates, the settings nav
+    // plate and the sidebar's / toolbar's published plates (NoteSidebarHover
+    // Plate) ride the partial path, everything here needs whole frames.
     const uint64_t m = motion::NowMs();
     const ULONGLONG now = GetTickCount64();
-    if (sidebar_pill_.Active(m) || settings_nav_pill_.Active(m) || settings_nav_hover_.Active(m) ||
+    if (sidebar_pill_.Active(m) || settings_nav_pill_.Active(m) ||
         collapse_anim_ || details_anim_ || ai_panel_.Animating() || ai_panel_.WantsDecorFrame())
         return true;
     for (const auto& motion : list_shift_) if (motion.Active(m)) return true;
@@ -1100,6 +1102,15 @@ bool MainRenderer::HoverRowDamage(int pane_index, int old_source, int new_source
 bool MainRenderer::HoverMotionDamage(D2D1_RECT_F* out) const {
     if (!out) return false;
     const uint64_t m = motion::NowMs();
+    // A plate-only frame samples just the plate's row, so a pane that draws
+    // tree guides loses every row of its ListShiftMotion baseline and the
+    // next small list change (an inline folder expand) reads them all as new
+    // and flashes the pane. Split layouts count too: the gliding plate may
+    // sit in another pane while this one's rows are all skipped (DrawPane
+    // walks every slot; only the row loop honors the damage). Same rule as
+    // HoverRowDamage above.
+    for (size_t i = 0; i < tree_guides_drawn_.size(); ++i)
+        if (tree_guides_drawn_[i]) return false;
     D2D1_RECT_F r{};
     bool any = false;
     for (size_t i = 0; i < list_hover_motion_.size(); ++i) {
@@ -1107,6 +1118,11 @@ bool MainRenderer::HoverMotionDamage(D2D1_RECT_F* out) const {
         if (i >= drawn_rows_.size() || drawn_rows_[i].empty()) return false;
         UnionInto(r, any, list_hover_motion_[i].Span());
     }
+    // The settings nav plate and the sidebar's / toolbar's published plates
+    // glide without needing whole frames.
+    if (settings_nav_hover_.Active(m)) UnionInto(r, any, settings_nav_hover_.Span());
+    if (sidebar_plate_moving_) UnionInto(r, any, sidebar_plate_span_);
+    if (toolbar_plate_moving_) UnionInto(r, any, toolbar_plate_span_);
     if (!any) return false;
     const float margin = 4.0f * scale_;
     *out = D2D1::RectF(r.left - margin, r.top - margin, r.right + margin, r.bottom + margin);
@@ -1130,6 +1146,8 @@ void MainRenderer::Render(const WindowViewModel& vm, const D2D1_RECT_F& rect,
     list_loading_active_ = false;
     folder_size_anim_active_ = false;
     motion_frame_wanted_ = false;
+    sidebar_plate_moving_ = false;
+    toolbar_plate_moving_ = false;
     landing_rects_.clear();
     if (collapse_anim_) {
         // Sampled once per frame so every layout query agrees on the width.

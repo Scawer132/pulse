@@ -370,6 +370,7 @@ struct TabControllerTestAccess {
 bool RunPaneHeaderIconTest();
 bool RunFolderSizesTest();
 bool RunColumnResizeUiTest();
+bool RunTreePlateDamageTest();
 
 namespace {
 
@@ -9485,6 +9486,12 @@ int RunSelfTest1B2() {
     if (GetEnvironmentVariableW(L"PULSE_SELFTEST_CASE", test_case, ARRAYSIZE(test_case)) &&
         wcscmp(test_case, L"pane-header-icons") == 0) {
         const bool passed = RunPaneHeaderIconTest();
+        if (g_log) { fclose(g_log); g_log = nullptr; }
+        return passed ? 0 : 1;
+    }
+    if (GetEnvironmentVariableW(L"PULSE_SELFTEST_CASE", test_case, ARRAYSIZE(test_case)) &&
+        wcscmp(test_case, L"tree-plate-damage") == 0) {
+        const bool passed = RunTreePlateDamageTest();
         if (g_log) { fclose(g_log); g_log = nullptr; }
         return passed ? 0 : 1;
     }

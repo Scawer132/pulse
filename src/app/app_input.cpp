@@ -2933,7 +2933,10 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         TRACKMOUSEEVENT tme{ sizeof(tme), TME_LEAVE, hwnd, 0 };
         TrackMouseEvent(&tme);
 
-        ui::WindowViewModel vm = BuildVm(*s);
+        // Hit-test only: probe_details=false keeps the move from kicking off
+        // selection probes or mutating detailsSelPath (BuildVm); paint owns
+        // those side effects.
+        ui::WindowViewModel vm = BuildVm(*s, false);
         D2D1_RECT_F rect = D2D1::RectF(0, 0, (float)s->compositor.Width(), (float)s->compositor.Height());
         ui::HitTestResult hit = s->renderer.HitTest(vm, rect, (float)mx, (float)my);
         const bool target_changed = static_cast<int>(hit.region) != s->hoverRegion ||
@@ -2942,7 +2945,8 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         if (target_changed && hit.region == ui::HitTestResult::SidebarItem && fs::IsUncPath(hit.path))
             RequestUncProbe(*s, hit.path);
         // A move from one row to another of the same details list repaints
-        // those rows and the plate's path only (partial redraw).
+        // those rows and the plate's path only (partial redraw); so does a
+        // move between two sidebar rows.
         const auto row_region = [](int region) {
             using R = ui::HitTestResult;
             switch (static_cast<R::Region>(region)) {
@@ -2953,7 +2957,28 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 return false;
             }
         };
+        const auto sidebar_region = [](int region) {
+            using R = ui::HitTestResult;
+            switch (static_cast<R::Region>(region)) {
+            case R::SidebarItem: case R::SidebarItemAction: case R::SidebarItemExpand:
+                return true;
+            default:
+                return false;
+            }
+        };
+        const auto toolbar_region = [](int region) {
+            using R = ui::HitTestResult;
+            switch (static_cast<R::Region>(region)) {
+            case R::NavBack: case R::NavForward: case R::NavUp: case R::NavRefresh:
+            case R::BreadcrumbSegment: case R::ToolbarMore: case R::ToolbarPin:
+            case R::ToolbarSort: case R::FilterBox: case R::ToolbarGroup:
+                return true;
+            default:
+                return false;
+            }
+        };
         const int prev_row = s->hoverRow, prev_pane = s->hoverPaneIndex, prev_region = s->hoverRegion;
+        const int prev_control = s->hoverControlIndex;
         const int prev_crumb = s->breadcrumbHover;
         const bool prev_sidebar_hot = s->sidebarScrollbarHot;
         if (UpdatePointerHover(*s, hit, POINT{mx, my})) {
@@ -2961,6 +2986,15 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             if (row_region(prev_region) && row_region(s->hoverRegion) && prev_pane == s->hoverPaneIndex &&
                 prev_crumb == s->breadcrumbHover && prev_sidebar_hot == s->sidebarScrollbarHot &&
                 s->renderer.HoverRowDamage(prev_pane, prev_row, s->hoverRow, &rows))
+                app::InvalidatePartial(hwnd, app::DamagePixels(rows));
+            else if (sidebar_region(prev_region) && sidebar_region(s->hoverRegion) &&
+                     prev_crumb == s->breadcrumbHover && prev_sidebar_hot == s->sidebarScrollbarHot &&
+                     s->renderer.SidebarHoverDamage(prev_control, s->hoverControlIndex, &rows))
+                app::InvalidatePartial(hwnd, app::DamagePixels(rows));
+            else if (toolbar_region(prev_region) && toolbar_region(s->hoverRegion) &&
+                     prev_crumb == s->breadcrumbHover && prev_sidebar_hot == s->sidebarScrollbarHot &&
+                     s->renderer.ToolbarHoverDamage(prev_region, prev_control,
+                                                    s->hoverRegion, s->hoverControlIndex, &rows))
                 app::InvalidatePartial(hwnd, app::DamagePixels(rows));
             else
                 InvalidateRect(hwnd, nullptr, FALSE);
