@@ -42,8 +42,9 @@ void FillDetailsInfo(const DetailsInfoInput& input, ui::DetailsPanelView& view) 
     if (input.this_pc) {
         const SystemFacts& facts = Facts();
         view.name = l10n::Get(I::ThisPc);
+        // The OS name heads the card the way Explorer labels This PC; the rows
+        // below carry what only a system card shows.
         view.subtitle_text = facts.os_name;
-        view.context_rows.emplace_back(l10n::Get(I::AboutOs), facts.os_name);
         view.context_rows.emplace_back(l10n::Get(I::DetailsSysVersion), facts.os_build);
         view.context_rows.emplace_back(l10n::Get(I::DetailsComputerName), facts.computer);
         view.context_rows.emplace_back(l10n::Get(I::DetailsProcessor), facts.cpu);

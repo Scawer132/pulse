@@ -68,7 +68,9 @@ SystemFacts ReadFacts() {
     if (GlobalMemoryStatusEx(&memory) && memory.ullTotalPhys) {
         const double gib = static_cast<double>(memory.ullTotalPhys) / (1024.0 * 1024.0 * 1024.0);
         wchar_t text[32]{};
-        if (std::abs(gib - std::round(gib)) < 0.05)
+        // Firmware and the iGPU carve out a little, so 24 GB reads as 23.8:
+        // show the installed size the way the system settings do.
+        if (std::abs(gib - std::round(gib)) < 0.25)
             swprintf_s(text, L"%.0f GB", std::round(gib));
         else
             swprintf_s(text, L"%.1f GB", gib);
