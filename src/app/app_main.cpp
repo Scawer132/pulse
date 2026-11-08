@@ -17,6 +17,7 @@
 #include "update_stage.h"
 #include "tag_ads_sync.h"
 #include "app_prompts.h"
+#include "wndproc_guard.h"
 #include "vertical_tabs.h"
 #include "favorites_bar.h"
 #include "tag_view.h"
@@ -302,7 +303,8 @@ static thread_local bool t_pump_paint = false;
 // WM_PAINT, so a frame started inside the frame still running. Each nested
 // frame holds WndProcImpl's whole stack frame, and 47 of them overflowed the
 // stack (crash report 2026-10-25). A frame wanted while one runs is put off;
-// the outer frame repaints that window once it ends.
+// the outer frame repaints that window once it ends. Messages that nest without
+// a frame are capped separately (wndproc_guard.h).
 static thread_local int t_render_depth = 0;
 static thread_local std::vector<HWND> t_deferred_frames;
 static void DeferFrame(HWND hwnd) {
@@ -1194,6 +1196,20 @@ static void StartDeferredServices(AppState& s) {
 }
 
 LRESULT CALLBACK WndProcImpl(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    // A message that re-enters here while 24 are already on the stack is how a
+    // crash becomes a stack overflow: drop it and let the diagnostics log name
+    // it (wndproc_guard.h). Normal messages pay a counter increment and decrement.
+    const app::WndProcDepthScope depth_scope(msg);
+    if (!depth_scope.allowed()) {
+        pulse::crash::AddBreadcrumb(4, msg, app::CurrentWndProcDepth());
+        diagnostics::runtime::Event("wndproc_depth_dropped",
+            {{"msg", msg}, {"depth", static_cast<uint64_t>(app::CurrentWndProcDepth())}});
+        return 0;
+    }
+    // Nested entries happen in modal loops and in the re-entry this guard
+    // exists for; the 64-entry ring then holds the deepest tail of the chain.
+    if (const int depth = app::CurrentWndProcDepth(); depth >= 4)
+        pulse::crash::AddBreadcrumb(3, msg, depth);
     pulse::app::startup_trace::MessageScope trace_message(msg);
     AppState* s = GetAppState(hwnd);
     // A Chinese / Japanese IME in native mode can report a Ctrl or Alt chord
@@ -3466,6 +3482,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     __try {
         return WndProcImpl(hwnd, msg, wParam, lParam);
     } __except (pulse::crash::AddBreadcrumb(1, msg, static_cast<int32_t>(GetExceptionCode())),
+                // Before the reset below: SEH skips destructors, but the depth
+                // the chain reached is what the report needs.
+                pulse::crash::AddBreadcrumb(2, msg, app::CurrentWndProcDepth()),
+                app::ResetWndProcDepth(),
                 pulse::crash::ReportFatal(GetExceptionInformation(), "wndproc")) {
         TerminateProcess(GetCurrentProcess(), GetExceptionCode());
         return 0;

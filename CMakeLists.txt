@@ -1147,6 +1147,8 @@ add_executable(pulse_quick_jump_test src/bench/quick_jump_test.cpp src/app/doubl
 target_link_libraries(pulse_quick_jump_test PRIVATE user32 shell32 ole32 uuid)
 add_executable(pulse_frame_pump_test src/bench/frame_pump_test.cpp src/app/frame_pump.cpp)
 target_link_libraries(pulse_frame_pump_test PRIVATE dwmapi user32)
+add_executable(pulse_wndproc_guard_test src/bench/wndproc_guard_test.cpp src/app/wndproc_guard.cpp)
+target_link_libraries(pulse_wndproc_guard_test PRIVATE pulse_runtime_log)
 
 # Search enhancement: native pinyin data and per-user full-text index.
 # Mapping remains disabled by default. Only the short-lived task snapshot opts
