@@ -93,8 +93,7 @@
 
 - 崩溃 JSON 里 category 2/3 的深度链（需要在 `WndProcImpl` 里制造一次真实崩溃）。
 - `--shot` 模式的退出码不稳定：4 次运行里 3 次以 `0xC0000005` 结束，**包括改动前的
-  基线构建**，且都发生在 `process_stop` 之后，与护栏无关，属于既有的退出阶段问题，
-  需要单独排查。
+  基线构建**，且都发生在 `process_stop` 之后，与护栏无关。根因见 §8。
 
 ### 3.6 已知降级
 
@@ -141,3 +140,51 @@
 - CI 阈值取 8 KB（而非 4 KB）：项目里 1–4 KB 的临时缓冲很常见，4 KB 噪音大；肇事
   值是 32/64 KB。
 - CI 只查 diff 新增行：避免维护基线清单，也让存量代码不必一次性整改。
+
+## 8. 附录：`--shot` 退出码 `0xC0000005` 的根因（2026-11-08）
+
+**现象**：`pulse.exe --shot` 约一半的运行以 `0xC0000005` 退出，改动前的基线构建同样复现。
+
+**取证**：临时装 vectored exception handler 记录故障地址，再用 `build/pulse.map` 反查符号：
+
+```
+code=0xC0000005 base=0x7FF6ACC80000 addr=pulse+0xB961B2
+  thread_start
+  SeedShellVerbCache 的 lambda + 0x242
+  EnumerateStaticVerbs + 0xE63
+  l10n::Get + 0x102        <- AV（该函数范围 0xB960B0..0xB964D0）
+```
+
+**链条**：
+
+1. `SeedShellVerbCache` 在启动时起一个 **detached** 线程逐类型枚举 shell 动词
+   （`std::thread(...).detach()`，`src/app/app_commands.cpp`）；
+2. `EnumerateStaticVerbs` 为菜单标题调用 `l10n::Get`；
+3. `l10n` 的字符串表是命名空间作用域的全局对象——`g_cache`（`std::array<std::unordered_map<...>, 3>`）、
+   `g_empty`、`g_mutex`（`src/common/localization.cpp`），在 `exit()` 的静态析构阶段被销毁；
+4. 退出时只要那个线程还在某次 `EnumerateStaticVerbs` 里（`IsWindow` / generation 检查只在
+   两个扩展之间做），它就会访问已析构的 map → AV。
+
+同一个仓库已经为这个坑绕过一次：`src/app/shell_verbs.cpp` 的图标缓存注释写着
+"Never destroyed: SeedShellVerbCache's detached thread can still be here while exit()
+runs static destructors"，用 `*new` 做成永不销毁。`l10n` 的表没有这样处理。
+
+**为什么没有崩溃报告**：崩溃发生在静态析构阶段，`crash_reporter.cpp` 的
+`g_diagnostics_root` / `g_config` 也是全局 `std::wstring`，此时可能已被析构，`WriteReport`
+自己再炸一次，所以 `Diagnostics/Crashes` 只留下 lease 的痕迹（目录时间戳变了），没有 .json/.dmp。
+
+**影响**：
+
+- `--shot` / 视觉 CI 约一半概率退出码是 AV；只看 PNG 的脚本不受影响；
+- 生产：只在"退出时 seed 线程仍在枚举"的窗口内触发——启动后很快关窗、或 shell 缓存刚失效
+  重新 seed 后立刻退出。此时 `HandOffAtExit` 已跑完、会话已保存，用户看不到现象，但进程以
+  AV 结束，且这类退出期崩溃不会留下报告。
+
+**修复建议（未实施）**：
+
+1. 把 `l10n` 的 `g_cache` / `g_empty` / `g_mutex` 改成永不销毁（与 `shell_verbs.cpp` 同一写法），
+   最小改动，只影响这几个对象的生命周期；
+2. 可选：在 `HandOffAtExit` 里 join 这个 seed 线程（停止标志 + 有上限等待），从根上消除
+   "线程比进程活得久"这一类问题；
+3. 可选附加：把 `crash_reporter.cpp` 的 `g_diagnostics_root` / `g_config` 也做成永不销毁，
+   让退出阶段的崩溃能留下报告。
