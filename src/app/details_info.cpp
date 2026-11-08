@@ -1,11 +1,8 @@
 // details_info.cpp — see details_info.h.
 #include "details_info.h"
-#include "../common/display_path.h"
 #include "../common/localization.h"
-#include "../common/text_format.h"
 #include "../fs/fs_enum.h"
 #include "system_info.h"
-#include <cstdio>
 
 namespace pulse::app {
 namespace {
@@ -17,12 +14,6 @@ std::wstring LeafName(std::wstring path) {
     if (path.size() == 2 && path[1] == L':') return path;
     const size_t at = path.find_last_of(L"\\/");
     return at == std::wstring::npos ? path : path.substr(at + 1);
-}
-
-std::wstring ItemsText(uint64_t entries) {
-    wchar_t text[64]{};
-    swprintf_s(text, l10n::Get(I::ItemsCountFormat).c_str(), static_cast<int>(entries));
-    return text;
 }
 } // namespace
 
@@ -52,19 +43,13 @@ void FillDetailsInfo(const DetailsInfoInput& input, ui::DetailsPanelView& view) 
         return;
     }
 
+    // A folder card is the folder as a selected folder would be: name, path and
+    // is_dir here, with 位置/类型/大小/包含/日期 and 其他 filled from the same
+    // meta and size machinery the panel already uses.
+    view.multi_count = 1;
     view.is_dir = true;
     view.path = input.folder_path;
     view.name = LeafName(input.folder_path);
-    view.type_text = l10n::Get(I::KindFolder);
-    view.location_text = path::FriendlyPathText(input.folder_path);
-    view.context_rows.emplace_back(l10n::Get(I::Location), view.location_text);
-    view.context_rows.emplace_back(l10n::Get(I::ColumnSize),
-        input.size_bytes ? pulse::format::ByteSize(*input.size_bytes, true)
-                         : std::wstring(L"\u2014"));
-    // A listing that has not arrived (or failed) knows no count; say so rather
-    // than claiming zero.
-    view.context_rows.emplace_back(l10n::Get(I::Contains),
-        input.entries ? ItemsText(*input.entries) : std::wstring(L"\u2014"));
 }
 
 } // namespace pulse::app

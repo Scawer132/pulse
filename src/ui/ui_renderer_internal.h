@@ -1561,6 +1561,12 @@ void ClearTextWidthCache() {
         { 4, pulse::l10n::StringId::DetailsOther },
     };
 
+    // A folder card (the folder the tab shows, nothing selected) keeps the fact
+    // sections and drops the ones whose controls act on a selection: but there
+    // the target is the folder itself, so the 标签 chips, 属性 toggles and the
+    // 安全 更改 button would act on what is already open.
+    inline bool DetailsCardShowsSection(int id) { return id == 0 || id == 4; }
+
     // Button row labels, shared between layout (width measurement) and drawing.
     constexpr pulse::l10n::StringId kDetailsButtonLabels[4] = {
         pulse::l10n::StringId::Open, pulse::l10n::StringId::OpenNewTab,
@@ -1808,9 +1814,9 @@ void ClearTextWidthCache() {
                 ? MeasureLayoutText(compositor, dwrite, small_fmt, label) : 90.0f * s;
             out.cloud_download = DetailsCloudButtonRect(out.preview, s, label_w);
         }
-        // Preview off: no fold bar and no well to hit up there. A context card
-        // has no fold bar either: its well only shows an icon.
-        if (d.preview_enabled && !d.context) {
+        // Preview off: no fold bar and no well to hit up there. A system card
+        // keeps no fold bar either: its well only shows the OS logo.
+        if (d.preview_enabled && !d.pc_card) {
             out.preview_toggle = D2D1::RectF(x, previewBottom, panel.right - pad,
                 std::min(panel.bottom, previewBottom + 28.0f * s));
         }
@@ -1831,13 +1837,13 @@ void ClearTextWidthCache() {
                                              out.star.left - 4.0f * s, y + 22.0f * s);
         }
         y += 22.0f * s + 16.0f * s + 8.0f * s; // name + type + gap
-        if (d.context) {
-            // A card is its facts: no button row, no sections.
+        if (d.pc_card) {
+            // A system card is its facts: no button row, no sections.
             y += static_cast<float>(d.context_rows.size()) * 18.0f * s + 8.0f * s;
             out.content_height_dip = (y + d.scroll_y * s - panel.top) / s;
             return;
         }
-        if (d.multi_count <= 1) {
+        if (d.multi_count <= 1 && !d.context) {
             // Button row: 打开 / 在新标签打开 / 复制路径 / 更多 (icon over label).
             // Buttons size to their measured label width; leftover space is
             // shared equally so the row still spans the panel. Very narrow
@@ -1870,8 +1876,13 @@ void ClearTextWidthCache() {
                 bx += bw[i] + gap;
             }
             y += rowH + 4.0f * s;
+        }
 
+        // A card has no actions (打开 / 星标 / 重命名 need a selected row) but
+        // keeps the fact sections; its 标签 / 属性 / 安全 controls do not.
+        if (d.multi_count <= 1) {
             for (const auto& def : kDetailsSections) {
+                if (d.context && !DetailsCardShowsSection(def.id)) continue;
                 y += 8.0f * s; // separator gap (line drawn inside DrawDetailsPanel)
                 out.section_headers.push_back(D2D1::RectF(x, y, x + w, y + 28.0f * s));
                 out.section_ids.push_back(def.id);

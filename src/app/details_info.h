@@ -1,6 +1,6 @@
-// details_info.h — The details panel card shown while nothing is selected: the
-// current folder, or the machine when the tab sits at 此电脑. Facts only, so
-// the card is filled without reading the folder or the selection again.
+// details_info.h — What the details panel shows while nothing is selected: the
+// current folder, described the same way a selected folder is, or the machine
+// at 此电脑. Both only set the panel's subject; the sections draw the facts.
 #pragma once
 #include <cstdint>
 #include <optional>
@@ -15,13 +15,12 @@ bool DetailsInfoAppliesTo(const std::wstring& path);
 
 struct DetailsInfoInput {
     bool this_pc = false;
-    std::wstring folder_path;             // current directory for a folder card
-    std::optional<uint64_t> entries;      // children the listing already knows
-    std::optional<uint64_t> size_bytes;   // cached walk result, when one exists
+    std::wstring folder_path;   // current directory for a folder card
 };
 
 // Fills @p view with a context card. Callers must not lay out or draw the
-// card's action buttons, attribute toggles or security rows: it has none.
+// card's action buttons, name-row toggles or its interactive sections: nothing
+// is selected, so those would target the folder the tab already shows.
 void FillDetailsInfo(const DetailsInfoInput& input, ui::DetailsPanelView& view);
 
 } // namespace pulse::app

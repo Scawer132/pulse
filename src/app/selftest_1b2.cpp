@@ -9423,17 +9423,13 @@ bool RunDetailsInfoCardTest() {
         ui::DetailsPanelView view;
         DetailsInfoInput input;
         input.folder_path = L"C:\\Users";
-        input.entries = 12;
-        input.size_bytes = 4096;
         FillDetailsInfo(input, view);
         Check(view.context && !view.pc_card && view.is_dir,
             L"folder card: describes the folder, not the machine");
         Check(view.name == L"Users", L"folder card: leaf name");
-        Check(view.context_rows.size() == 3, L"folder card: location, size and item count");
-        Check(view.context_rows[1].second.find(L"\u2014") == std::wstring::npos,
-            L"folder card: a cached walk result fills the size");
-        Check(view.context_rows[2].second.find(L"12") == 0,
-            L"folder card: item count comes from the listing");
+        Check(view.has_selection && view.path == L"C:\\Users" && view.multi_count == 1,
+            L"folder card: shares the selected-folder layout path");
+        Check(view.context_rows.empty(), L"folder card: the fact rows come from the sections");
     }
     {
         ui::DetailsPanelView view;
@@ -9441,9 +9437,6 @@ bool RunDetailsInfoCardTest() {
         input.folder_path = L"D:\\";
         FillDetailsInfo(input, view);
         Check(view.name == L"D:", L"folder card: a drive root reads as its letter");
-        Check(view.context_rows[1].second == L"\u2014", L"folder card: no cached size shows a dash");
-        Check(view.context_rows[2].second == L"\u2014",
-            L"folder card: a listing that has not arrived shows a dash");
     }
     Check(DetailsInfoAppliesTo(L"C:\\Windows"), L"card: a real folder takes the card");
     Check(!DetailsInfoAppliesTo(L""), L"card: an empty path is 此电脑");

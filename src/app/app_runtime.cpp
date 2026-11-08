@@ -3132,6 +3132,18 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
             dv.has_selection = true;
             dv.multi_count = selCount;
         }
+        if (!dv.has_selection && selCount == 0 && tab &&
+            (tab->current_path.empty() || app::DetailsInfoAppliesTo(tab->current_path))) {
+            // Nothing selected: the panel describes the current folder the way
+            // it describes a selected one, or 此电脑 as the machine card. A
+            // folder card shares the meta prefetch, the size walk and every
+            // fact row below; only the sections that act on a selection are
+            // left out when drawing.
+            app::DetailsInfoInput input;
+            input.this_pc = tab->current_path.empty();
+            input.folder_path = tab->current_path;
+            app::FillDetailsInfo(input, dv);
+        }
         if (dv.has_selection && selCount == 1 && tab->snapshot &&
             tab->selected_index >= 0 &&
             tab->selected_index < static_cast<int>(tab->EntryCount())) {
@@ -3238,38 +3250,20 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
             }
             s.renderer.CachedPreviewProperties(dv.path, dv.modified_value, dv.size_value,
                                                dv.preview_properties);
-            dv.preset_tags.clear();
-            for (int idx = 0; idx < static_cast<int>(s.places.tags.size()); ++idx) {
-                ui::DetailsPanelView::TagChip chip;
-                chip.name = s.places.tags[static_cast<size_t>(idx)].name;
-                chip.color = ui::HexColor(s.places.tags[static_cast<size_t>(idx)].rgb);
-                chip.tag_index = idx;
-                chip.assigned = s.places.PathHasTag(dv.path, idx);
-                dv.preset_tags.push_back(std::move(chip));
+            // 标签 chips act on a selection; a card has none to tag.
+            if (!dv.context) {
+                dv.preset_tags.clear();
+                for (int idx = 0; idx < static_cast<int>(s.places.tags.size()); ++idx) {
+                    ui::DetailsPanelView::TagChip chip;
+                    chip.name = s.places.tags[static_cast<size_t>(idx)].name;
+                    chip.color = ui::HexColor(s.places.tags[static_cast<size_t>(idx)].rgb);
+                    chip.tag_index = idx;
+                    chip.assigned = s.places.PathHasTag(dv.path, idx);
+                    dv.preset_tags.push_back(std::move(chip));
+                }
             }
             // 文件夹大小 off: the size row offers 计算大小 instead of walking.
             if (dv.is_dir && s.appPrefs.folder_size_auto) sizeTarget = dv.path;
-        } else if (!dv.has_selection && selCount == 0 && tab) {
-            // Nothing selected: describe the folder itself, or 此电脑 as the
-            // machine card. No walk starts here - the size comes from the
-            // cache, so navigating never traverses anything.
-            const std::wstring& cwd = tab->current_path;
-            if (cwd.empty() || app::DetailsInfoAppliesTo(cwd)) {
-                app::DetailsInfoInput input;
-                input.this_pc = cwd.empty();
-                input.folder_path = cwd;
-                if (tab->snapshot) input.entries = tab->EntryCount();
-                if (!input.this_pc) {
-                    const auto value = s.folderSizes.Get(cwd);
-                    if (value.has_value) input.size_bytes = value.bytes;
-                }
-                app::FillDetailsInfo(input, dv);
-                if (probe_details && s.detailsSelPath != cwd) {
-                    s.detailsSelPath = cwd;
-                    s.detailsScroll = 0.0f;
-                    dv.scroll_y = 0.0f;
-                }
-            }
         }
     }
     std::wstring requestedSizePath;

@@ -818,9 +818,9 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         iy += 18.0f * s;
     };
 
-    if (d.context) {
-        // The card: one fact per row. No buttons, attribute toggles or security
-        // rows - those describe a selected entry, and nothing is selected.
+    if (d.pc_card) {
+        // The system card: one fact per row. A folder card instead reuses the
+        // sections below, exactly as a selected folder does.
         for (const auto& row : d.context_rows) infoRow(row.first.c_str(), row.second, y);
         y += 8.0f * s;
     } else if (d.multi_count > 1) {
@@ -834,8 +834,9 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         y = iy + 8.0f * s;
     }
 
-    if (d.multi_count <= 1 && !d.context) {
+    if (d.multi_count <= 1 && !d.pc_card) {
         for (const auto& def : kDetailsSections) {
+            if (d.context && !DetailsCardShowsSection(def.id)) continue;
             // Section separator (matches the 8 DIP gap in LayoutDetailsPanel).
             y += 8.0f * s;
             MakeBrush(dc, theme.stroke_card, brStrokeCard_);
