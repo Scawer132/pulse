@@ -264,6 +264,9 @@ void MainRenderer::DrawSidebar(const WindowViewModel& vm, const D2D1_RECT_F& rec
         sm.hover.SetAnimationsEnabled(sm.animations);
     }
     bool sidebar_moving = false;
+    // The hover plate rides the partial path (NoteSidebarHoverPlate); the
+    // pill and the reorder need whole frames.
+    bool plate_moving = false;
     // One hover plate glides between rows (the menus' plate); reorders and
     // high contrast keep each row's own static hover.
     const bool plate_live = !reordering && !IsHighContrast();
@@ -310,7 +313,7 @@ void MainRenderer::DrawSidebar(const WindowViewModel& vm, const D2D1_RECT_F& rec
             else
                 sm.hover.Hide();
         }
-        if (sm.hover.Active(motion_now_) || (sm.hover_alpha > 0.0f && sm.hover_alpha < 1.0f)) sidebar_moving = true;
+        if (sm.hover.Active(motion_now_) || (sm.hover_alpha > 0.0f && sm.hover_alpha < 1.0f)) plate_moving = true;
     }
     const auto isSelectedSlot = [&](const SidebarSlot& slot) {
         return selected_slot >= 0 && &slot == &slots[static_cast<size_t>(selected_slot)];
@@ -380,10 +383,15 @@ void MainRenderer::DrawSidebar(const WindowViewModel& vm, const D2D1_RECT_F& rec
     struct FrameRequest {
         const MainRenderer* self;
         const bool& moving;
+        const bool& plate_moving;
+        const SidebarMotion& sm;
         ~FrameRequest() {
             if (moving) self->RequestMotionFrame();
+            // The hover plate rides the partial path (HoverMotionDamage);
+            // its span covers everywhere it is or has passed.
+            if (plate_moving) self->NoteSidebarHoverPlate(sm.hover.Span());
         }
-    } frame_request{this, sidebar_moving};
+    } frame_request{this, sidebar_moving, plate_moving, sm};
 
     if (compact) {
         for (const auto& slot : slots) {

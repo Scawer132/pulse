@@ -365,6 +365,10 @@ public:
         // Sidebar pill/plate, toolbar plates, column cascade, details sweep:
         // their last frame asked for another (RequestMotionFrame).
         if (motion_frame_wanted_) active = true;
+        // The sidebar's and toolbar's hover plates publish themselves instead
+        // (NoteSidebarHoverPlate): frames keep coming, but plate-only frames
+        // repaint just the plate spans (HoverMotionDamage).
+        if (sidebar_plate_moving_ || toolbar_plate_moving_) active = true;
         // Decoration only: loading placeholders shimmer (and must appear on
         // time) while a pane enumerates, the folder size skeleton and the
         // scanning label breathe, the pill's indeterminate ring spins. These
@@ -379,7 +383,7 @@ public:
     bool DecorativeMotionOnly() const { return decorative_only_; }
 
     // Partial redraw (plans/Pulse_局部重绘方案.md). Only a quiet window
-    // redraws part of itself: nothing moves but the list hover plates and no
+    // redraws part of itself: nothing moves but the hover plates and no
     // overlay is up, now or in the frame before. Anything else is a full frame.
     bool PartialRedrawSafe(const WindowViewModel& vm) const;
     // Where a row hover change in a details list repaints: both rows as drawn
@@ -1168,6 +1172,12 @@ private:
     // sidebar, toolbar, column strip and details panel files); cleared at the
     // start of every frame. Rides the same frame pump as everything else.
     mutable bool motion_frame_wanted_ = false;
+    // The hover plates' spans, published the same way while they glide or
+    // fade (ui_sidebar, ui_toolbar).
+    mutable bool sidebar_plate_moving_ = false;
+    mutable D2D1_RECT_F sidebar_plate_span_{};
+    mutable bool toolbar_plate_moving_ = false;
+    mutable D2D1_RECT_F toolbar_plate_span_{};
     // Partial redraw state (PartialRedrawSafe and friends).
     bool ticks_active_ = false;          // copy feedback, group wheel, thumbnails
     bool frame_partial_ = false;
@@ -1181,6 +1191,17 @@ private:
     bool NonHoverMotionActive() const;
     mutable std::vector<D2D1_RECT_F> landing_rects_;   // this frame's landing rows (window px)
     void RequestMotionFrame() const { motion_frame_wanted_ = true; }
+    // The sidebar's / toolbar's hover plate still glides or fades: `span` is
+    // all a plate-only frame repaints (HoverMotionDamage). The other motion
+    // keeps asking for whole frames through RequestMotionFrame.
+    void NoteSidebarHoverPlate(const D2D1_RECT_F& span) const {
+        sidebar_plate_span_ = span;
+        sidebar_plate_moving_ = true;
+    }
+    void NoteToolbarHoverPlate(const D2D1_RECT_F& span) const {
+        toolbar_plate_span_ = span;
+        toolbar_plate_moving_ = true;
+    }
     static constexpr ULONGLONG kTaskPillDoneMs = 1600;
     static constexpr ULONGLONG kTaskPillFadeMs = 300;
     bool task_pill_was_active_ = false;

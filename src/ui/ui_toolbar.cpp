@@ -383,14 +383,34 @@ void MainRenderer::DrawToolbar(const WindowViewModel& vm, const D2D1_RECT_F& rec
     // High contrast keeps each button's own static hover.
     const bool plates=!IsHighContrast();
     bool toolbar_moving=false;
+    // The nav / breadcrumb / command hover plates ride the partial path
+    // (NoteToolbarHoverPlate); the scroll easing, drag and badge motion
+    // still need whole frames.
+    bool plate_moving=false;
     // Every return below asks for the next frame while a plate moves.
     struct FrameRequest {
         const MainRenderer* self;
         const bool& moving;
+        const bool& plate_moving;
+        const ToolbarMotion& tm;
         ~FrameRequest() {
             if (moving) self->RequestMotionFrame();
+            if (!plate_moving) return;
+            D2D1_RECT_F span{};
+            bool any=false;
+            for (const GlidePlate* plate : {&tm.nav,&tm.crumbs,&tm.commands}) {
+                if (plate->alpha <= 0.0f) continue;
+                const D2D1_RECT_F s=plate->spring.Span();
+                if (s.right <= s.left) continue;
+                span.left=any&&(span.left<s.left)?span.left:s.left;
+                span.top=any&&(span.top<s.top)?span.top:s.top;
+                span.right=any&&(span.right>s.right)?span.right:s.right;
+                span.bottom=any&&(span.bottom>s.bottom)?span.bottom:s.bottom;
+                any=true;
+            }
+            if (any) self->NoteToolbarHoverPlate(span);
         }
-    } frame_request{this,toolbar_moving};
+    } frame_request{this,toolbar_moving,plate_moving,tm};
     const auto draw_plate=[&](const GlidePlate& plate) {
         if (plate.alpha <= 0.0f) return;
         D2D1_COLOR_F fill=theme.fill_hover;
@@ -411,7 +431,7 @@ void MainRenderer::DrawToolbar(const WindowViewModel& vm, const D2D1_RECT_F& rec
                 if (r.right>r.left && enabled && IsHovered(vm,nav_hits[i])) { hot=&r; hot_i=i; }
             }
             if (tm.nav.Step(hot_i,hot,theme.radius_control*scale_,motion_frame_,motion_now_,tm.animations))
-                toolbar_moving=true;
+                plate_moving=true;
             draw_plate(tm.nav);
         }
         for (int i=0;i<4;++i) {
@@ -500,7 +520,7 @@ void MainRenderer::DrawToolbar(const WindowViewModel& vm, const D2D1_RECT_F& rec
                                   vm.breadcrumb_hover != vm.breadcrumb_drop ? vm.breadcrumb_hover : -1;
                 if (tm.crumbs.Step(hot_i, hot_i >= 0 ? &placed[static_cast<size_t>(hot_i)].rc : nullptr,
                                    theme.radius_control * scale_, motion_frame_, motion_now_, tm.animations))
-                    toolbar_moving = true;
+                    plate_moving = true;
                 draw_plate(tm.crumbs);
             }
             {
@@ -665,7 +685,7 @@ void MainRenderer::DrawToolbar(const WindowViewModel& vm, const D2D1_RECT_F& rec
             consider(layout.filter,IsHovered(vm,HitTestResult::FilterBox),PlateKey(HitTestResult::FilterBox,0),rc);
         if (!group_chip)
             consider(layout.group,IsHovered(vm,HitTestResult::ToolbarGroup),PlateKey(HitTestResult::ToolbarGroup,0),rc);
-        if (tm.commands.Step(hot_key,hot,hot_radius,motion_frame_,motion_now_,tm.animations)) toolbar_moving=true;
+        if (tm.commands.Step(hot_key,hot,hot_radius,motion_frame_,motion_now_,tm.animations)) plate_moving=true;
         draw_plate(tm.commands);
     } else {
         tm.commands.Reset();

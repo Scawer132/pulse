@@ -416,6 +416,8 @@ public:
                 for (float& v : vel_) v = 0.0f;
                 last_ = now;
             }
+            span_ = Union(span_, current_);
+            span_ = Union(span_, to_);
             settled_ = false;
             start_ = now;
         } else if (!Same(target, to_)) {
@@ -430,7 +432,10 @@ public:
         context_ = context;
         key_ = key;
         frame_ = frame;
-        if (!settled_) Step(now);
+        if (!settled_) {
+            Step(now);
+            span_ = Union(span_, current_);
+        }
         return current_;
     }
     // Query SystemAnimationsEnabled once per surface open, not per frame.
@@ -440,14 +445,24 @@ public:
         // Bounded so a surface that stops rendering cannot keep ticking.
         return visible_ && !settled_ && now - start_ < kMaxGlideMs;
     }
+    // Everywhere the plate is or has passed since it left rest (empty when
+    // not drawn): a partial redraw repaints this span. RectMotion::Span's
+    // counterpart for the spring, whose path bends and overshoots.
+    D2D1_RECT_F Span() const noexcept { return visible_ ? span_ : D2D1::RectF(0, 0, 0, 0); }
 
 private:
     static constexpr uint64_t kMaxGlideMs = 1200;
     static bool Same(const D2D1_RECT_F& a, const D2D1_RECT_F& b) noexcept {
         return a.left == b.left && a.top == b.top && a.right == b.right && a.bottom == b.bottom;
     }
+    static D2D1_RECT_F Union(const D2D1_RECT_F& a, const D2D1_RECT_F& b) noexcept {
+        return D2D1::RectF(a.left < b.left ? a.left : b.left, a.top < b.top ? a.top : b.top,
+                           a.right > b.right ? a.right : b.right,
+                           a.bottom > b.bottom ? a.bottom : b.bottom);
+    }
     void Snap(const D2D1_RECT_F& target) noexcept {
         to_ = current_ = target;
+        span_ = target;  // at rest the plate occupies only the target
         for (float& v : vel_) v = 0.0f;
         settled_ = true;
     }
@@ -484,6 +499,7 @@ private:
     float vel_[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     D2D1_RECT_F to_{};
     D2D1_RECT_F current_{};
+    D2D1_RECT_F span_{};   // everywhere the plate has been since it left rest
 };
 
 } // namespace pulse::ui::motion
