@@ -2933,7 +2933,10 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         TRACKMOUSEEVENT tme{ sizeof(tme), TME_LEAVE, hwnd, 0 };
         TrackMouseEvent(&tme);
 
-        ui::WindowViewModel vm = BuildVm(*s);
+        // Hit-test only: probe_details=false keeps the move from kicking off
+        // selection probes or mutating detailsSelPath (BuildVm); paint owns
+        // those side effects.
+        ui::WindowViewModel vm = BuildVm(*s, false);
         D2D1_RECT_F rect = D2D1::RectF(0, 0, (float)s->compositor.Width(), (float)s->compositor.Height());
         ui::HitTestResult hit = s->renderer.HitTest(vm, rect, (float)mx, (float)my);
         const bool target_changed = static_cast<int>(hit.region) != s->hoverRegion ||
