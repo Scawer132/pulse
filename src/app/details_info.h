@@ -16,7 +16,7 @@ bool DetailsInfoAppliesTo(const std::wstring& path);
 struct DetailsInfoInput {
     bool this_pc = false;
     std::wstring folder_path;             // current directory for a folder card
-    uint64_t entries = 0;                 // children the listing already knows
+    std::optional<uint64_t> entries;      // children the listing already knows
     std::optional<uint64_t> size_bytes;   // cached walk result, when one exists
 };
 

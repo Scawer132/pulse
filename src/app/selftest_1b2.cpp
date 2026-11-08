@@ -9442,7 +9442,8 @@ bool RunDetailsInfoCardTest() {
         FillDetailsInfo(input, view);
         Check(view.name == L"D:", L"folder card: a drive root reads as its letter");
         Check(view.context_rows[1].second == L"\u2014", L"folder card: no cached size shows a dash");
-        Check(view.context_rows[2].second.find(L"0") == 0, L"folder card: an empty listing counts zero");
+        Check(view.context_rows[2].second == L"\u2014",
+            L"folder card: a listing that has not arrived shows a dash");
     }
     Check(DetailsInfoAppliesTo(L"C:\\Windows"), L"card: a real folder takes the card");
     Check(!DetailsInfoAppliesTo(L""), L"card: an empty path is 此电脑");

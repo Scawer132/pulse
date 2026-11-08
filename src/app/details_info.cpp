@@ -61,7 +61,10 @@ void FillDetailsInfo(const DetailsInfoInput& input, ui::DetailsPanelView& view) 
     view.context_rows.emplace_back(l10n::Get(I::ColumnSize),
         input.size_bytes ? pulse::format::ByteSize(*input.size_bytes, true)
                          : std::wstring(L"\u2014"));
-    view.context_rows.emplace_back(l10n::Get(I::Contains), ItemsText(input.entries));
+    // A listing that has not arrived (or failed) knows no count; say so rather
+    // than claiming zero.
+    view.context_rows.emplace_back(l10n::Get(I::Contains),
+        input.entries ? ItemsText(*input.entries) : std::wstring(L"\u2014"));
 }
 
 } // namespace pulse::app

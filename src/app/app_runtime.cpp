@@ -3258,7 +3258,7 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
                 app::DetailsInfoInput input;
                 input.this_pc = cwd.empty();
                 input.folder_path = cwd;
-                input.entries = tab->EntryCount();
+                if (tab->snapshot) input.entries = tab->EntryCount();
                 if (!input.this_pc) {
                     const auto value = s.folderSizes.Get(cwd);
                     if (value.has_value) input.size_bytes = value.bytes;
