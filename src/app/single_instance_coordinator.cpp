@@ -5,12 +5,12 @@
 #include <cstring>
 #include <objbase.h>
 #include "../common/current_user_security.h"
+#include "../common/local_profile.h"
 #include "default_file_manager.h"
 
 namespace pulse::app {
 namespace {
 
-constexpr wchar_t kMutexName[] = L"Local\\Pulse.Singleton";
 constexpr wchar_t kWindowClass[] = L"PulseMainWindow";
 constexpr wchar_t kPrimaryProperty[] = L"Pulse.Singleton.PrimaryPid";
 constexpr ULONG_PTR kOpenPathMessage = 0x50554C53; // 'PULS'
@@ -36,7 +36,7 @@ std::wstring EndpointName(std::wstring_view requested) {
     DWORD session = 0;
     const auto sid = CurrentUserSidString();
     if (sid.empty() || !ProcessIdToSessionId(GetCurrentProcessId(), &session)) return {};
-    return std::wstring(kMutexName) + L"-" + sid + L"-" + std::to_wstring(session);
+    return std::wstring(local_profile::kInstanceName) + L"-" + sid + L"-" + std::to_wstring(session);
 }
 bool Created(HANDLE process, FILETIME& value) {
     FILETIME exit{}, kernel{}, user{};
@@ -59,7 +59,8 @@ SingleInstanceCoordinator::AcquireResult SingleInstanceCoordinator::Acquire(
     SetLastError(ERROR_SUCCESS);
     // Keep the legacy singleton lock across upgrades. An older owner has no
     // authenticated endpoint, so forwarding fails instead of starting a peer.
-    const std::wstring mutex_object = mutex_name.empty() ? kMutexName : std::wstring(mutex_name);
+    const std::wstring mutex_object = mutex_name.empty() ? std::wstring(local_profile::kInstanceName)
+                                                         : std::wstring(mutex_name);
     HANDLE mutex = CreateMutexW(security.get(), TRUE, mutex_object.c_str());
     if (!mutex) return AcquireResult::Failed;
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
