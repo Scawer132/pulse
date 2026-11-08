@@ -3,7 +3,7 @@
 > 关联：2026-11-08 栈溢出崩溃。主线程栈 1 MB，崩溃栈上 `WndProcImpl` /
 > `WindowOverviewMessage` 成对重复 47 层，约 26 KB/层（`HandleMouseMove` ~12 KB +
 > `HitTest` ~17 KB）。
-> 状态：**阶段 1 已实现**（分支 `local/wndproc-guard`）。阶段 2、3 未开始。
+> 状态：**阶段 1、2 已实现**（分支 `local/wndproc-guard`）；阶段 3 未开始。
 
 ## 1. 结论
 
@@ -104,15 +104,18 @@
   的护栏不会碰到，只有在已经失控的链路上才会。
 - 护栏不修复触发链，只把"崩溃"降级为"一次可诊断的丢消息"。
 
-## 4. 阶段 2：大栈帧 CI 检查（未开始）
+## 4. 阶段 2：大栈帧 CI 检查（已实现）
 
 - `tools/ci/check_stack_arrays.py`：只扫 `src/app`、`src/ui`、`src/fs`、`src/ops`，
-  局部定长数组 ≥ 8 KB 判失败；只检查 diff 新增行（老代码自然 grandfather，不需要
-  基线文件）；行尾 `// stack-ok: <理由>` 豁免；`--all` 供一次性审计。
-- 接入现有静态检查工作流（`.github/workflows/l10n.yml` 的 `check` job，它已经是
-  `src/**` 的检查入口），并同步到 `release.yml` 的 `l10n` job。
-- 验收：故意加 `wchar_t buf[65536];` 必须失败；带豁免注释必须通过。
-- 不批量重构现有 51 处（绝大多数在 index/preview/测试流程，不在 UI 线程）。
+  定长数组 ≥ 8 KB 判失败；只检查 diff 新增行（老代码自然 grandfather，不需要基线
+  文件）；行尾 `// stack-ok: <理由>` 豁免；`--all` 供一次性审计。
+- 接入 `.github/workflows/l10n.yml` 新增的 `stack` job：`fetch-depth: 0`，PR 与
+  `origin/<base>` 比较，push 与 `github.event.before` 比较。**没有**同步到
+  `release.yml`：tag 上没有可靠的 diff 基准，发布构建不该跑 diff 检查。
+- 本地验收：临时提交一个 `wchar_t buffer[65536]` 必须失败（实测报了 131072 bytes）；
+  给同一行加 `// stack-ok:` 后通过；`--base origin/local-main` 在真实分支上通过。
+- `--all` 审计出当前 40 处（含 `std::array` 和 8–16 KB 的），不批量重构：绝大多数在
+  index/preview/测试流程，不在 UI 线程的深栈路径上。
 
 ## 5. 阶段 3：同步派发治理（未开始，数据驱动）
 
