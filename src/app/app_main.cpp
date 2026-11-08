@@ -280,6 +280,10 @@ static int g_shot_favorites_focus = -1;
 // Decorative motion (loading shimmer, folder size skeleton, the pill's ring)
 // runs at about 30 fps instead of the display rate (FramePump::ArmPaced).
 constexpr double kDecorativeFrameMs = 1000.0 / 30.0;
+// Hover plates gliding alone are a highlight moving over a few rows: 60 fps
+// looks the same as the display rate and costs a fraction of the frames a
+// 144 Hz panel would otherwise wake the window for.
+constexpr double kHoverPlateFrameMs = 1000.0 / 60.0;
 // While the window is cloaked (another virtual desktop, a shell cloak) frames
 // stop; this polls for the uncloak, then repaints once to pick motion up.
 constexpr UINT_PTR kTimerCloakPoll = 0x434C;  // 'CL'
@@ -324,10 +328,12 @@ static bool TestNestedFrames() {
     }();
     return on;
 }
-// Keeps frames coming while anything moves: the display rate, or about 30 fps
-// when only decorative motion runs. Render and the UI timer both decide here.
-static void ArmMotionFrames(AppState& s, bool app_motion) {
+// Keeps frames coming while anything moves: the display rate, or a paced rate
+// when only decorative motion (30 fps) or a gliding hover plate (60 fps) runs.
+// Render and the UI timer both decide here.
+static void ArmMotionFrames(AppState& s, bool app_motion, bool plates_only = false) {
     if (!app_motion && s.renderer.DecorativeMotionOnly()) s.framePump.ArmPaced(kDecorativeFrameMs);
+    else if (!app_motion && plates_only) s.framePump.ArmPaced(kHoverPlateFrameMs);
     else s.framePump.Arm();
 }
 static bool WindowCloaked(HWND hwnd) {
@@ -655,7 +661,8 @@ void Render(AppState& s) {
     // clock instead of the 16 ms UI timer (see WM_FRAME_PUMP).
     if (s.framePump.Running()) {
         const bool motion = AppMotion(s);
-        if (s.renderer.TickMotion(GetTickCount64()) || motion) ArmMotionFrames(s, motion);
+        if (s.renderer.TickMotion(GetTickCount64()) || motion)
+            ArmMotionFrames(s, motion, s.renderer.HoverPlatesOnly());
     }
     if (const UINT caret = s.renderer.CaretBlinkDueMs()) SetTimer(s.hwnd, kTimerDrawnCaret, caret, nullptr);
     else KillTimer(s.hwnd, kTimerDrawnCaret);
@@ -2316,7 +2323,7 @@ LRESULT CALLBACK WndProcImpl(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             if (s->renderer.TickMotion(now) || app_motion) {
                 // Paced by the frame pump when it runs; the timer only
                 // re-arms it so the two never both render the same motion.
-                if (s->framePump.Running()) ArmMotionFrames(*s, app_motion);
+                if (s->framePump.Running()) ArmMotionFrames(*s, app_motion, s->renderer.HoverPlatesOnly());
                 else dirty = true;
             }
             if (pulse::TickSidebarPeek(*s, now)) dirty = true;

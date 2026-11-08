@@ -227,9 +227,13 @@ public:
             start_ = now;
         }
         arrangement_ = arrangement;
-        previous_.swap(current_);
-        current_.clear();
         if (!same_view) previous_.clear();
+        // A partial (plate-only) frame samples just the rows inside its
+        // damage; the others keep the position they were last drawn at, so a
+        // list change that follows still moves them instead of reading them
+        // as new rows (which flashed every row of an inline expand).
+        for (const auto& row : current_) previous_[row.first] = row.second;
+        current_.clear();
         valid_ = true;
         context_ = context;
         scroll_x_ = scroll_x;

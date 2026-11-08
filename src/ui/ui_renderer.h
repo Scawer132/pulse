@@ -381,6 +381,10 @@ public:
     }
     // The last TickMotion found nothing but decorative motion running.
     bool DecorativeMotionOnly() const { return decorative_only_; }
+    // The last TickMotion found nothing but the hover plates moving: those
+    // frames repaint small spans, so the pump may pace them below the display
+    // rate instead of waking the window on every refresh for a highlight.
+    bool HoverPlatesOnly() const { return !NonHoverMotionActive(); }
 
     // Partial redraw (plans/Pulse_局部重绘方案.md). Only a quiet window
     // redraws part of itself: nothing moves but the hover plates and no

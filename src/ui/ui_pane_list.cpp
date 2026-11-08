@@ -4559,8 +4559,16 @@ void MainRenderer::DrawList(const PaneViewModel& vm, float x, float y, float w, 
         tree_guides = BuildTreeGuides(*vm.tree, startIdx, endIdx, vm.ViewIndex(focus_src));
         if (tree_guides.hi_level >= 0) tree_hi_row = tree_guides.hi_first - 1;
     }
-    if (pane_index >= 0 && pane_index < static_cast<int>(tree_guides_drawn_.size()))
-        tree_guides_drawn_[static_cast<size_t>(pane_index)] = !tree_guides.rows.empty();
+    // Only guides the frame really draws keep a pane off the partial path: a
+    // details list with nothing expanded is a flat list of depth-0 rows, which
+    // draws no line at all, so its hover plates may glide with plate-only
+    // frames (ListShiftMotion keeps the rows such a frame did not sample).
+    if (pane_index >= 0 && pane_index < static_cast<int>(tree_guides_drawn_.size())) {
+        bool guides_drawn = tree_guides.hi_level >= 0;
+        for (const TreeGuideRow& guide : tree_guides.rows)
+            if (guide.through != 0 || guide.join >= 0) { guides_drawn = true; break; }
+        tree_guides_drawn_[static_cast<size_t>(pane_index)] = guides_drawn;
+    }
     const auto drawTreeChevron = [&](const DetailsTreeRow& tr, const D2D1_RECT_F& cell, float baseX,
                                      bool strong, bool accent) {
         const float cx = baseX + (static_cast<float>(tr.depth) * kTreeIndentDip +

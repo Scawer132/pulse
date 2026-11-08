@@ -138,6 +138,34 @@ int wmain() {
               L"abandoned row flash stops asking for frames after its duration");
     }
 
+    // A plate-only frame samples just the rows inside its damage. The rows it
+    // skipped keep the position they were last drawn at, so the next insert
+    // still slides them along instead of treating every one of them as new
+    // (which flashed the whole pane on an inline folder expand).
+    {
+        namespace motion = pulse::ui::motion;
+        const bool animations = motion::SystemAnimationsEnabled();
+        motion::ListShiftMotion rows;
+        auto key = [](int i) { return static_cast<uint64_t>(1000 + i); };
+        const auto row_pos = [](int i) { return D2D1::Point2F(0, 20.0f * static_cast<float>(i)); };
+        rows.BeginFrame(11, 0, 0, 10, 1, 3000, true);
+        for (int i = 0; i < 10; ++i) rows.Offset(key(i), row_pos(i));
+        rows.EndFrame();
+        // Plate-only frame: only the hovered row (0) is drawn; row 4 is not.
+        rows.BeginFrame(11, 0, 0, 10, 2, 3016, true);
+        rows.Offset(key(0), row_pos(0));
+        rows.EndFrame();
+        // One row inserted at the top: the rest move down one slot.
+        rows.BeginFrame(11, 0, 0, 11, 3, 3032, true);
+        rows.Offset(key(500), row_pos(0));
+        const D2D1_POINT_2F slid = rows.Offset(key(4), row_pos(5));
+        rows.EndFrame();
+        Check(!animations || slid.y < -1.0f,
+              L"a row a plate-only frame did not sample still slides after an insert");
+        Check(!animations || rows.Flash(key(500)) > 0.0f, L"the inserted row is the one that flashes");
+        Check(rows.Flash(key(4)) == 0.0f, L"a row drawn before the partial frame is not flashed as new");
+    }
+
     // View-mode morph (grid -> list): shared-element travel, spring timing,
     // time-bounded, cheap enough for every visible item every frame.
     {

@@ -108,6 +108,24 @@ struct TreePlateDamageTest {
             check(!plate_only_damage(tree, 0),
                   "a pane drawing tree guides takes whole frames while its own plate glides");
 
+            // Nothing expanded: every row is depth 0 and no guide line is
+            // drawn, so the pane must keep the plate-only path. This is the
+            // details view of an ordinary folder, the common case.
+            auto flat_rows = [] {
+                auto rows = std::make_shared<DetailsTreeRows>();
+                for (int i = 0; i < 3; ++i) {
+                    DetailsTreeRow row;
+                    row.depth = 0;
+                    row.expandable = true;
+                    rows->rows.push_back(row);
+                }
+                rows->view_of_source = {0, 1, 2};
+                return rows;
+            };
+            PaneViewModel flat = make_pane(L"flat", flat_rows());
+            check(plate_only_damage(flat, 0),
+                  "a details pane with nothing expanded draws no guide, so its plate keeps plate-only frames");
+
             // Split layout: the plate glides in the plain pane while nobody
             // hovers the tree pane, whose rows the damage test skips all the same.
             PaneViewModel split_tree = make_pane(L"split tree", tree_rows());
