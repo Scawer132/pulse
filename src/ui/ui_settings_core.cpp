@@ -684,27 +684,42 @@ void MainRenderer::DrawSettingsCore(const WindowViewModel& vm, const D2D1_RECT_F
             dim_end(dim);
         }
         // 网络位置 (pulse_network_design.html §06).
-        toggle(lay.lan_discovery_row,I::SettingsLanDiscovery,I::SettingsLanDiscoveryDesc,L"\xE701",vm.settings_lan_discovery,40);
+        toggle(lay.lan_discovery_row,I::SettingsLanDiscovery,I::SettingsLanDiscoveryDesc,L"\xE701",vm.settings_lan_discovery,47);
         {
             const I modes[]={I::LanCache10Min,I::LanCache1Hour,I::LanCacheSession};const int mode_values[]={0,1,2};
             const bool dim=dim_begin(!vm.settings_lan_discovery);
             segmented(lay.lan_cache_card,lay.lan_cache_row,modes,mode_values,vm.settings_lan_cache_mode,H::SettingsLanCache,I::SettingsLanCache,I::SettingsLanCacheDesc,3,L"\xE916");
             dim_end(dim);
         }
-        toggle(lay.network_recent_row,I::SettingsNetworkRecent,I::SettingsNetworkRecentDesc,L"\xE81C",vm.settings_network_recent,41);
-        toggle(lay.hidden_shares_row,I::NetworkShowHiddenShares,I::SettingsHiddenSharesDesc,L"\xED1A",vm.settings_hidden_shares,42);
+        toggle(lay.network_recent_row,I::SettingsNetworkRecent,I::SettingsNetworkRecentDesc,L"\xE81C",vm.settings_network_recent,48);
+        toggle(lay.hidden_shares_row,I::NetworkShowHiddenShares,I::SettingsHiddenSharesDesc,L"\xED1A",vm.settings_hidden_shares,49);
         label(lay.network_clear_row,l10n::Get(I::SettingsClearNetwork),l10n::Get(I::SettingsClearNetworkDesc),L"\xE74D",lay.network_clear_button.left-8*scale_);
         button(lay.network_clear_button,l10n::Get(I::Clear),H::SettingsToggle,46);
         }
         text(l10n::Get(I::SettingsImmediate),lay.footer,true);
-    } else if(!vm.settings_search_enabled) {
-        text(l10n::Get(I::Search),lay.search_master_section);
-        draw_card(lay.search_master_row);
-        toggle(lay.search_master_row,I::SearchSwitch,I::SearchSwitchDesc,L"\xE71E",false,38);
     } else {
         text(l10n::Get(I::Search),lay.search_master_section);
         draw_card(lay.search_master_row);
-        toggle(lay.search_master_row,I::SearchSwitch,I::SearchSwitchDesc,L"\xE71E",true,38);
+        toggle(lay.search_master_row,I::SearchSwitch,I::SearchSwitchDesc,L"\xE71E",vm.settings_search_enabled,38);
+        // Faded and inert while what they depend on is off.
+        auto dim_begin=[&](bool dim) {
+            if(dim) dc->PushLayer(D2D1::LayerParameters1(D2D1::InfiniteRect(),nullptr,D2D1_ANTIALIAS_MODE_PER_PRIMITIVE,
+                D2D1::IdentityMatrix(),0.42f,nullptr,D2D1_LAYER_OPTIONS1_NONE),nullptr);
+            return dim;
+        };
+        auto dim_end=[&](bool dim) { if(dim) dc->PopLayer(); };
+        if(!vm.settings_search_enabled) {
+            // Search off: the dialog jump bar still appears under other apps'
+            // Open / Save dialogs (it needs no index), so its switches stay here.
+            draw_card(D2D1::RectF(lay.dialog_jump_row.left,lay.dialog_jump_row.top,
+                lay.dialog_jump_row.right,lay.dialog_jump_auto_row.bottom));
+            toggle(lay.dialog_jump_row,I::DialogJumpBar,I::DialogJumpBarDesc,L"\xE8E5",vm.settings_dialog_jump_bar,41);
+            divider(lay.dialog_jump_row);
+            const bool dim_auto=dim_begin(!vm.settings_dialog_jump_bar);
+            toggle(lay.dialog_jump_auto_row,I::DialogJumpAuto,I::DialogJumpAutoDesc,L"\xE72A",vm.settings_dialog_jump_auto,42);
+            divider(lay.dialog_jump_auto_row);
+            dim_end(dim_auto);
+        } else {
         section(0,I::SearchModeName);section(1,I::SearchModeContent);
         draw_card(lay.group[0]);draw_card(lay.group[1]);
         toggle(lay.global_search_row,I::GlobalSearch,I::GlobalSearchDesc,L"\xE721",vm.settings_global_search_enabled,15);divider(lay.global_search_row);
@@ -713,33 +728,25 @@ void MainRenderer::DrawSettingsCore(const WindowViewModel& vm, const D2D1_RECT_F
             L"\xE765",lay.global_search_hotkey_row.right-16*scale_);
         button(lay.global_search_hotkey_button,vm.settings_global_search_capturing ? l10n::Get(I::GlobalSearchRecording) : vm.settings_global_search_hotkey,H::SettingsGlobalSearchHotkey,0);
         divider(lay.global_search_hotkey_row);
-        {
-            // Faded and inert while what they depend on is off.
-            auto dim_begin=[&](bool dim) {
-                if(dim) dc->PushLayer(D2D1::LayerParameters1(D2D1::InfiniteRect(),nullptr,D2D1_ANTIALIAS_MODE_PER_PRIMITIVE,
-                    D2D1::IdentityMatrix(),0.42f,nullptr,D2D1_LAYER_OPTIONS1_NONE),nullptr);
-                return dim;
-            };
-            auto dim_end=[&](bool dim) { if(dim) dc->PopLayer(); };
-            const bool dim=dim_begin(!vm.settings_global_search_enabled);
-            toggle(lay.global_search_double_ctrl_row,I::GlobalSearchDoubleCtrl,I::GlobalSearchDoubleCtrlDesc,L"\xE945",vm.settings_global_search_double_ctrl,40);
-            divider(lay.global_search_double_ctrl_row);
-            dim_end(dim);
-            const bool dim_gap=dim_begin(!vm.settings_global_search_enabled || !vm.settings_global_search_double_ctrl);
-            const I gaps[]={I::DoubleCtrlFast,I::DoubleCtrlNormal,I::DoubleCtrlSlow};const int gap_values[]={200,300,400};
-            segmented(lay.global_search_gap_card,lay.global_search_gap,gaps,gap_values,vm.settings_global_search_double_ctrl_ms,H::SettingsDoubleCtrlGap,
-                I::GlobalSearchDoubleCtrlGap,I::GlobalSearchDoubleCtrlGapDesc,3,L"\xE916");
-            divider(lay.global_search_gap_card);
-            dim_end(dim_gap);
-            const bool dim_apps=dim_begin(!vm.settings_global_search_enabled);
-            toggle(lay.global_search_apps_row,I::GlobalSearchApps,I::GlobalSearchAppsDesc,L"\xE71D",vm.settings_global_search_apps,43);
-            divider(lay.global_search_apps_row);
-            dim_end(dim_apps);
-            toggle(lay.dialog_jump_row,I::DialogJumpBar,I::DialogJumpBarDesc,L"\xE8E5",vm.settings_dialog_jump_bar,41);divider(lay.dialog_jump_row);
-            const bool dim_auto=dim_begin(!vm.settings_dialog_jump_bar);
-            toggle(lay.dialog_jump_auto_row,I::DialogJumpAuto,I::DialogJumpAutoDesc,L"\xE72A",vm.settings_dialog_jump_auto,42);
-            divider(lay.dialog_jump_auto_row);
-            dim_end(dim_auto);
+        const bool dim=dim_begin(!vm.settings_global_search_enabled);
+        toggle(lay.global_search_double_ctrl_row,I::GlobalSearchDoubleCtrl,I::GlobalSearchDoubleCtrlDesc,L"\xE945",vm.settings_global_search_double_ctrl,40);
+        divider(lay.global_search_double_ctrl_row);
+        dim_end(dim);
+        const bool dim_gap=dim_begin(!vm.settings_global_search_enabled || !vm.settings_global_search_double_ctrl);
+        const I gaps[]={I::DoubleCtrlFast,I::DoubleCtrlNormal,I::DoubleCtrlSlow};const int gap_values[]={200,300,400};
+        segmented(lay.global_search_gap_card,lay.global_search_gap,gaps,gap_values,vm.settings_global_search_double_ctrl_ms,H::SettingsDoubleCtrlGap,
+            I::GlobalSearchDoubleCtrlGap,I::GlobalSearchDoubleCtrlGapDesc,3,L"\xE916");
+        divider(lay.global_search_gap_card);
+        dim_end(dim_gap);
+        const bool dim_apps=dim_begin(!vm.settings_global_search_enabled);
+        toggle(lay.global_search_apps_row,I::GlobalSearchApps,I::GlobalSearchAppsDesc,L"\xE71D",vm.settings_global_search_apps,43);
+        divider(lay.global_search_apps_row);
+        dim_end(dim_apps);
+        toggle(lay.dialog_jump_row,I::DialogJumpBar,I::DialogJumpBarDesc,L"\xE8E5",vm.settings_dialog_jump_bar,41);divider(lay.dialog_jump_row);
+        const bool dim_auto=dim_begin(!vm.settings_dialog_jump_bar);
+        toggle(lay.dialog_jump_auto_row,I::DialogJumpAuto,I::DialogJumpAutoDesc,L"\xE72A",vm.settings_dialog_jump_auto,42);
+        divider(lay.dialog_jump_auto_row);
+        dim_end(dim_auto);
         }
         toggle(lay.search_pinyin_row,I::SearchPinyin,I::SearchPinyinDesc,L"\xE721",vm.settings_search_pinyin,9);divider(lay.search_pinyin_row);
         toggle(lay.jump_history_row,I::JumpHistory,I::JumpHistoryDesc,L"\xE823",vm.settings_jump_history,44,lay.jump_history_clear.left-12*scale_);

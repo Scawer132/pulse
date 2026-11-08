@@ -101,8 +101,14 @@ SettingsLayout MakeSettingsLayout(const WindowViewModel& vm, const D2D1_RECT_F& 
         l.search_master_row = D2D1::RectF(card_left, y, card_right, y + 88*scale);
         y += 88*scale;
         if (!vm.settings_search_enabled) {
-            // Search off: only the master switch; nothing below it applies.
+            // Search off: only the master switch, then the dialog jump bar. The
+            // bar still appears under other apps' dialogs without the index, and
+            // its switch has to stay reachable here or it cannot be turned off.
             y += 24.0f * scale;
+            l.dialog_jump_row = D2D1::RectF(card_left, y, card_right, y + 68*scale);
+            y += 68*scale;
+            l.dialog_jump_auto_row = D2D1::RectF(card_left, y, card_right, y + 68*scale);
+            y += 68*scale;
         } else {
         y += 24*scale;
         l.section[0] = D2D1::RectF(card_left, y, card_right, y + 28*scale);

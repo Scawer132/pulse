@@ -124,9 +124,9 @@ const SetDef kSettingDefs[] = {
     {"change_days", I::SettingsChangeDays, 12, 0, -1, SET_GET(s.appPrefs.change_tracking_days),
      +[](AppState& s, int i) { static constexpr int days[] = {1, 3, 7}; s.settings.ChangeTrackingDays(days[i]); },
      {{{"today", I::ChangeToday, 1}, {"3", I::ChangeLast3Days, 3}, {"7", I::ChangeLast7Days, 7}}}},
-    SET_SW("lan_discovery", SettingsLanDiscovery, 12, 0, 40, lan_discovery),
-    SET_SW("network_recent", SettingsNetworkRecent, 12, 0, 41, network_recent_enabled),
-    SET_SW("hidden_shares", NetworkShowHiddenShares, 12, 0, 42, show_hidden_shares),
+    SET_SW("lan_discovery", SettingsLanDiscovery, 12, 0, 47, lan_discovery),
+    SET_SW("network_recent", SettingsNetworkRecent, 12, 0, 48, network_recent_enabled),
+    SET_SW("hidden_shares", NetworkShowHiddenShares, 12, 0, 49, show_hidden_shares),
     SET_SW("confirm_delete", SettingsConfirmDelete, 12, 0, 32, confirm_recycle_delete),
     // 搜索与索引
     SET_SW("global_search", GlobalSearch, 1, kSetSys, 15, global_search_enabled),

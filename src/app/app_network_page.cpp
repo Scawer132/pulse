@@ -468,7 +468,7 @@ bool HandleNetworkPageCommand(AppState& s, int cmd) {
         SaveRecent(s);
         RefreshNetworkPages(s);
         return true;
-    case app::CmdNetworkHiddenShares: HandleNetworkSettingToggle(s, 42); return true;
+    case app::CmdNetworkHiddenShares: HandleNetworkSettingToggle(s, 49); return true;
     case app::CmdNetworkDiscoverySettings: OpenSettingsTab(s, 12); return true;
     // The Windows wizard creates a NetHood shortcut; the page re-reads them.
     case app::CmdAddNetworkPlace: RunCommandLine(s, L"rundll32.exe", L"shwebsvc.dll,AddNetPlaceRunDll"); return true;
@@ -687,17 +687,19 @@ void CancelLanDiscovery(AppState& s) {
     if (s.networkPage && s.networkPage->scan) s.networkPage->scan->cancelled = true;
 }
 
+// 47-49, not 40-42: the search page owns those (double Ctrl, jump bar and its
+// auto-jump), and ToggleSetting offers every click to this handler first.
 bool HandleNetworkSettingToggle(AppState& s, int index) {
     auto& prefs = s.appPrefs;
     switch (index) {
-    case 40:
+    case 47:
         prefs.lan_discovery = !prefs.lan_discovery;
         if (!prefs.lan_discovery) CancelLanDiscovery(s);
         break;
-    case 41:
+    case 48:
         prefs.network_recent_enabled = !prefs.network_recent_enabled;
         break;
-    case 42:
+    case 49:
         prefs.show_hidden_shares = !prefs.show_hidden_shares;
         ApplyNetworkPrefs(s);
         // Open share lists re-read with or without the $ shares.

@@ -526,18 +526,19 @@ HitTestResult MainRenderer::HitTest(const WindowViewModel& vm, const D2D1_RECT_F
                 if (ContainsPt(lay.confirm_delete_row, x, y)) {
                     r.region = HitTestResult::SettingsToggle; r.index = 32; return r;
                 }
-                // 文件操作 → 网络位置 (zero rects on the other pages).
+                // 文件操作 → 网络位置 (zero rects on the other pages). 47-49 do
+                // not collide with the search page's 38-45 (see HandleNetworkSettingToggle).
                 if (ContainsPt(lay.lan_discovery_row, x, y)) {
-                    r.region = HitTestResult::SettingsToggle; r.index = 40; return r;
+                    r.region = HitTestResult::SettingsToggle; r.index = 47; return r;
                 }
                 for (int i = 0; i < 3; ++i) if (vm.settings_lan_discovery && ContainsPt(lay.lan_cache_row[i], x, y)) {
                     r.region = HitTestResult::SettingsLanCache; r.index = i; return r;
                 }
                 if (ContainsPt(lay.network_recent_row, x, y)) {
-                    r.region = HitTestResult::SettingsToggle; r.index = 41; return r;
+                    r.region = HitTestResult::SettingsToggle; r.index = 48; return r;
                 }
                 if (ContainsPt(lay.hidden_shares_row, x, y)) {
-                    r.region = HitTestResult::SettingsToggle; r.index = 42; return r;
+                    r.region = HitTestResult::SettingsToggle; r.index = 49; return r;
                 }
                 if (ContainsPt(lay.network_clear_button, x, y)) {
                     r.region = HitTestResult::SettingsToggle; r.index = 46; return r;
