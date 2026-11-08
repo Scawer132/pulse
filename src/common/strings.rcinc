@@ -4419,6 +4419,17 @@ BEGIN
     IDS_DETAILS_COMPUTER_NAME "计算机名"
     IDS_DETAILS_PROCESSOR "处理器"
     IDS_DETAILS_MEMORY "内存"
+    IDS_DETAILS_MODEL "设备型号"
+    IDS_DETAILS_FIRMWARE "固件"
+    IDS_DETAILS_UPTIME "运行时间"
+    IDS_DETAILS_RESOLUTION "分辨率"
+    IDS_DETAILS_GRAPHICS "显卡"
+    IDS_DETAILS_CORES "核心"
+    IDS_DETAILS_SYSTEM_DRIVE "系统盘"
+    IDS_DETAILS_UPTIME_DAYS "%llu 天 %llu 小时"
+    IDS_DETAILS_UPTIME_HOURS "%llu 小时 %llu 分钟"
+    IDS_DETAILS_UPTIME_MINUTES "%llu 分钟"
+    IDS_DETAILS_CORES_FORMAT "%llu 核 / %llu 线程"
 END
 
 LANGUAGE 0x09, 0x01
@@ -8837,6 +8848,17 @@ BEGIN
     IDS_DETAILS_COMPUTER_NAME "Computer name"
     IDS_DETAILS_PROCESSOR "Processor"
     IDS_DETAILS_MEMORY "Memory"
+    IDS_DETAILS_MODEL "Model"
+    IDS_DETAILS_FIRMWARE "Firmware"
+    IDS_DETAILS_UPTIME "Uptime"
+    IDS_DETAILS_RESOLUTION "Display"
+    IDS_DETAILS_GRAPHICS "Graphics"
+    IDS_DETAILS_CORES "Cores"
+    IDS_DETAILS_SYSTEM_DRIVE "System drive"
+    IDS_DETAILS_UPTIME_DAYS "%llu d %llu h"
+    IDS_DETAILS_UPTIME_HOURS "%llu h %llu min"
+    IDS_DETAILS_UPTIME_MINUTES "%llu min"
+    IDS_DETAILS_CORES_FORMAT "%llu cores / %llu threads"
 END
 
 // Traditional Chinese (Taiwan), generated from the Simplified entries above.

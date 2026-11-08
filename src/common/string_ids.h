@@ -4437,5 +4437,16 @@
 #define IDS_DETAILS_COMPUTER_NAME                                                        5645
 #define IDS_DETAILS_PROCESSOR                                                            5646
 #define IDS_DETAILS_MEMORY                                                               5647
+#define IDS_DETAILS_MODEL                                                                5648
+#define IDS_DETAILS_FIRMWARE                                                             5649
+#define IDS_DETAILS_UPTIME                                                               5650
+#define IDS_DETAILS_RESOLUTION                                                           5651
+#define IDS_DETAILS_GRAPHICS                                                             5652
+#define IDS_DETAILS_CORES                                                                5653
+#define IDS_DETAILS_SYSTEM_DRIVE                                                         5654
+#define IDS_DETAILS_UPTIME_DAYS                                                          5655
+#define IDS_DETAILS_UPTIME_HOURS                                                         5656
+#define IDS_DETAILS_UPTIME_MINUTES                                                       5657
+#define IDS_DETAILS_CORES_FORMAT                                                         5658
 
 #endif  // PULSE_STRING_IDS_H

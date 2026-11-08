@@ -1550,6 +1550,57 @@ void ClearTextWidthCache() {
         return preview_h + 32.0f * scale;
     }
 
+    // The panel's well height for a given subject. The 此电脑 card puts its
+    // logo and identity there instead of a preview, so it keeps a compact band
+    // and starts its facts right below.
+    inline float DetailsPanelPreviewHeight(const DetailsPanelView& d, const D2D1_RECT_F& panel,
+                                           float scale) {
+        if (!d.preview_enabled) return 0.0f;
+        const float height = DetailsPreviewHeight(panel, scale, d.preview_expansion);
+        return d.pc_card ? (std::min)(height, 132.0f * scale) : height;
+    }
+
+    // 此电脑 card: one fact per line, key on the left, value aligned in one
+    // column (fastfetch's list, in the panel's own type).
+    constexpr float kDetailsFactRowDip = 20.0f;   // one text line + padding
+    constexpr float kDetailsFactLineDip = 18.0f;  // the text line itself
+
+    // Defined below (cached DWrite advance); the fact helpers above the details
+    // layout need it before its definition.
+    float MeasureTextWidth(IDWriteFactory2* factory, IDWriteTextFormat* fmt,
+                           const std::wstring& text);
+
+    // Widest key plus a gap: every value starts at the same x. Clamped so a
+    // long-worded language cannot eat the values.
+    inline float DetailsFactKeyWidth(const DetailsPanelView& d, float content_w, float scale,
+                                     IDWriteFactory2* factory, IDWriteTextFormat* fmt) {
+        float key_w = 0.0f;
+        if (factory && fmt) {
+            for (const auto& row : d.context_rows)
+                key_w = (std::max)(key_w, MeasureTextWidth(factory, fmt, row.first));
+        }
+        return (std::min)(key_w + 16.0f * scale, content_w * 0.40f);
+    }
+
+    // A CPU or GPU name that does not fit takes a second line instead of being
+    // cut mid-word. Draw and layout both derive the row height from this.
+    inline float DetailsFactRowHeight(const std::wstring& value, float value_w, float scale,
+                                      IDWriteFactory2* factory, IDWriteTextFormat* fmt) {
+        if (!factory || !fmt || value.empty()) return kDetailsFactRowDip * scale;
+        const float avail = (std::max)(1.0f, value_w - 2.0f * scale);
+        return MeasureTextWidth(factory, fmt, value) <= avail
+            ? kDetailsFactRowDip * scale
+            : (kDetailsFactRowDip + kDetailsFactLineDip) * scale;
+    }
+
+    inline float DetailsFactRowsHeight(const DetailsPanelView& d, float value_w, float scale,
+                                       IDWriteFactory2* factory, IDWriteTextFormat* fmt) {
+        float total = 0.0f;
+        for (const auto& row : d.context_rows)
+            total += DetailsFactRowHeight(row.second, value_w, scale, factory, fmt);
+        return total;
+    }
+
     // Display order: 基本信息 / 标签 / 属性 / 安全 / 其他. Collapsed state is
     // keyed by def.id, so reordering is safe.
     struct DetailsSectionDef { int id; pulse::l10n::StringId label; };
@@ -1825,7 +1876,11 @@ void ClearTextWidthCache() {
             return;
         }
         float y = previewBottom + 32.0f * s - d.scroll_y * s;
-        if (d.multi_count <= 1 && !d.context) {
+        // A system card leads with the OS logo and the machine's identity in
+        // the well, so its facts start right below it.
+        const bool card_header_in_well = d.pc_card && preview_h > 1.0f;
+        if (card_header_in_well) y = previewBottom + 12.0f * s - d.scroll_y * s;
+        if (!card_header_in_well && d.multi_count <= 1 && !d.context) {
             // Name row: star then rename pencil on the right edge.
             out.rename = D2D1::RectF(panel.right - pad - 22.0f * s, y,
                                      panel.right - pad, y + 22.0f * s);
@@ -1836,10 +1891,11 @@ void ClearTextWidthCache() {
             out.preview_enable = D2D1::RectF(out.star.left - 4.0f * s - 22.0f * s, y,
                                              out.star.left - 4.0f * s, y + 22.0f * s);
         }
-        y += 22.0f * s + 16.0f * s + 8.0f * s; // name + type + gap
+        if (!card_header_in_well) y += 22.0f * s + 16.0f * s + 8.0f * s; // name + type + gap
         if (d.pc_card) {
             // A system card is its facts: no button row, no sections.
-            y += static_cast<float>(d.context_rows.size()) * 18.0f * s + 8.0f * s;
+            const float key_w = DetailsFactKeyWidth(d, w, s, dwrite, small_fmt);
+            y += DetailsFactRowsHeight(d, w - key_w, s, dwrite, small_fmt) + 8.0f * s;
             out.content_height_dip = (y + d.scroll_y * s - panel.top) / s;
             return;
         }

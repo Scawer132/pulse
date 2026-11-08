@@ -1310,8 +1310,7 @@ HitTestResult MainRenderer::HitTest(const WindowViewModel& vm, const D2D1_RECT_F
         if (panel.right > panel.left && x >= panel.left && x < panel.right &&
             y >= panel.top && y < panel.bottom) {
             DetailsHitRects hitRects;
-            const float previewH = vm.details.preview_enabled
-                ? DetailsPreviewHeight(panel, scale_, vm.details.preview_expansion) : 0.0f;
+            const float previewH = DetailsPanelPreviewHeight(vm.details, panel, scale_);
             LayoutDetailsPanel(panel, scale_, vm.details,
                                compositor_ ? compositor_->DwriteFactory() : nullptr,
                                compositor_ ? compositor_->SmallFormat() : nullptr,

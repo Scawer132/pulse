@@ -9411,13 +9411,14 @@ bool RunDetailsInfoCardTest() {
         Check(view.has_selection && view.context && view.pc_card,
             L"this pc card: uses the selection layout path");
         Check(view.name == l10n::Get(l10n::StringId::ThisPc), L"this pc card: title is 此电脑");
-        Check(view.context_rows.size() == 4, L"this pc card: four facts");
+        Check(view.context_rows.size() >= 5, L"this pc card: the system facts are listed");
         bool filled = true;
         for (const auto& row : view.context_rows)
             filled = filled && !row.first.empty() && !row.second.empty();
         Check(filled, L"this pc card: every fact has a label and a value");
         Check(view.subtitle_text == Facts().os_name,
             L"this pc card: OS name heads the card, as the About page shows it");
+        Check(!view.pc_meta.empty(), L"this pc card: host and architecture under the OS name");
     }
     {
         ui::DetailsPanelView view;

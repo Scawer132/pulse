@@ -4444,3 +4444,14 @@ DetailsSysVersion	IDS_DETAILS_SYS_VERSION	5644	系统版本	System version	系�
 DetailsComputerName	IDS_DETAILS_COMPUTER_NAME	5645	计算机名	Computer name	電腦名稱
 DetailsProcessor	IDS_DETAILS_PROCESSOR	5646	处理器	Processor	處理器
 DetailsMemory	IDS_DETAILS_MEMORY	5647	内存	Memory	記憶體
+DetailsModel	IDS_DETAILS_MODEL	5648	设备型号	Model	裝置型號
+DetailsFirmware	IDS_DETAILS_FIRMWARE	5649	固件	Firmware	韌體
+DetailsUptime	IDS_DETAILS_UPTIME	5650	运行时间	Uptime	執行時間
+DetailsResolution	IDS_DETAILS_RESOLUTION	5651	分辨率	Display	解析度
+DetailsGraphics	IDS_DETAILS_GRAPHICS	5652	显卡	Graphics	顯示卡
+DetailsCores	IDS_DETAILS_CORES	5653	核心	Cores	核心
+DetailsSystemDrive	IDS_DETAILS_SYSTEM_DRIVE	5654	系统盘	System drive	系統磁碟
+DetailsUptimeDays	IDS_DETAILS_UPTIME_DAYS	5655	%llu 天 %llu 小时	%llu d %llu h	%llu 天 %llu 小時
+DetailsUptimeHours	IDS_DETAILS_UPTIME_HOURS	5656	%llu 小时 %llu 分钟	%llu h %llu min	%llu 小時 %llu 分鐘
+DetailsUptimeMinutes	IDS_DETAILS_UPTIME_MINUTES	5657	%llu 分钟	%llu min	%llu 分鐘
+DetailsCoresFormat	IDS_DETAILS_CORES_FORMAT	5658	%llu 核 / %llu 线程	%llu cores / %llu threads	%llu 核 / %llu 執行緒

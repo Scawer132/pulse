@@ -695,6 +695,7 @@ struct DetailsPanelView {
     bool context = false;
     bool pc_card = false;           // context card is 此电脑 => system facts
     std::vector<std::pair<std::wstring, std::wstring>> context_rows; // This PC facts
+    std::wstring pc_meta;           // This PC card: host · architecture under the OS name
     int multi_count = 0;            // >1 => multi-selection summary mode
     std::wstring name, path, type_text;
     std::wstring subtitle_text;     // under-name line: type · size short form

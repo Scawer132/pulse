@@ -4429,6 +4429,17 @@ enum class StringId : UINT {
     DetailsComputerName = IDS_DETAILS_COMPUTER_NAME,
     DetailsProcessor = IDS_DETAILS_PROCESSOR,
     DetailsMemory = IDS_DETAILS_MEMORY,
+    DetailsModel = IDS_DETAILS_MODEL,
+    DetailsFirmware = IDS_DETAILS_FIRMWARE,
+    DetailsUptime = IDS_DETAILS_UPTIME,
+    DetailsResolution = IDS_DETAILS_RESOLUTION,
+    DetailsGraphics = IDS_DETAILS_GRAPHICS,
+    DetailsCores = IDS_DETAILS_CORES,
+    DetailsSystemDrive = IDS_DETAILS_SYSTEM_DRIVE,
+    DetailsUptimeDays = IDS_DETAILS_UPTIME_DAYS,
+    DetailsUptimeHours = IDS_DETAILS_UPTIME_HOURS,
+    DetailsUptimeMinutes = IDS_DETAILS_UPTIME_MINUTES,
+    DetailsCoresFormat = IDS_DETAILS_CORES_FORMAT,
 };
 
 bool IsLanguageId(std::wstring_view id) noexcept;

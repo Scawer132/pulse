@@ -48,6 +48,47 @@ DetailsMotion& DetailsMotionFor(const void* renderer) {
     static std::unordered_map<const void*, DetailsMotion> motions;
     return motions[renderer];
 }
+
+// One line of details text broken at the last space that fits; prefers a
+// balanced second line over a lone orphan word ("... Laptop" / "GPU"). Returns
+// {text, ""} when it already fits. Used by the 此电脑 card's identity block and
+// by fact values that are too long for their column.
+std::pair<std::wstring, std::wstring> SplitDetailLine(const std::wstring& text, float width,
+                                                      IDWriteFactory2* factory,
+                                                      IDWriteTextFormat* fmt) {
+    std::pair<std::wstring, std::wstring> out{text, std::wstring()};
+    if (!factory || !fmt || text.empty() || width <= 1.0f) return out;
+    const auto measure = [&](const std::wstring& value) {
+        return MeasureTextWidth(factory, fmt, value);
+    };
+    if (measure(text) <= width) return out;
+    size_t cut = text.find_last_of(L' ');
+    while (cut != std::wstring::npos && cut > 0 && measure(text.substr(0, cut)) > width)
+        cut = cut > 1 ? text.find_last_of(L' ', cut - 1) : std::wstring::npos;
+    if (cut == std::wstring::npos || cut == 0) {
+        // No usable space (CJK, a hyphenated model name): cut by character.
+        size_t lo = 1, hi = text.size();
+        while (lo < hi) {
+            const size_t mid = (lo + hi + 1) / 2;
+            if (measure(text.substr(0, mid)) <= width) lo = mid; else hi = mid - 1;
+        }
+        cut = lo;
+    } else {
+        const std::wstring head = text.substr(0, cut);
+        const std::wstring tail = cut + 1 < text.size() ? text.substr(cut + 1) : std::wstring();
+        const size_t prev = head.find_last_of(L' ');
+        if (!tail.empty() && tail.find(L' ') == std::wstring::npos &&
+            prev != std::wstring::npos && prev > 0 &&
+            measure(tail) * 2.5f < measure(head) && measure(text.substr(prev)) <= width)
+            cut = prev;
+    }
+    std::wstring second = text.substr(cut);
+    while (!second.empty() && second.front() == L' ') second.erase(second.begin());
+    out.first = text.substr(0, cut);
+    while (!out.first.empty() && out.first.back() == L' ') out.first.pop_back();
+    out.second = std::move(second);
+    return out;
+}
 }  // namespace
 
 D2D1_RECT_F MainRenderer::DetailsPanelRect(float w, float h) const {
@@ -83,8 +124,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
     const float s = scale_;
     const DetailsPanelView& d = vm.details;
     // Preview off => zero-height well: the panel starts at the name row.
-    const float previewH = d.preview_enabled
-        ? DetailsPreviewHeight(panel, s, d.preview_expansion) : 0.0f;
+    const float previewH = DetailsPanelPreviewHeight(d, panel, s);
     DetailsHitRects hit;
     LayoutDetailsPanel(panel, s, d, compositor_->DwriteFactory(),
                        compositor_->SmallFormat(), compositor_, previewH, hit);
@@ -505,19 +545,54 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
                 }
             }
         } else if (d.pc_card && preview_on && previewH > 1.0f) {
-            // 此电脑: the card leads with the OS logo instead of a file icon.
-            const float logo = 96.0f * s;
-            const float logo_cx = (contentRc.left + contentRc.right) * 0.5f;
-            const float logo_top = contentRc.top +
+            // 此电脑: the well is the card's header. The OS logo on the left,
+            // the machine's identity beside it, facts below - a system sheet
+            // rather than an empty preview box.
+            const float logo = 64.0f * s;
+            const float logoX = contentRc.left + 6.0f * s;
+            const float logoTop = contentRc.top +
                 ((contentRc.bottom - contentRc.top) - logo) * 0.5f;
-            const D2D1_RECT_F logoRc = D2D1::RectF(logo_cx - logo * 0.5f, logo_top,
-                logo_cx + logo * 0.5f, logo_top + logo);
+            const D2D1_RECT_F logoRc = D2D1::RectF(logoX, logoTop, logoX + logo, logoTop + logo);
             if (!DrawFluentSvg(IDR_WINDOWS_OS_SVG, logoRc, 1.0f, nullptr, true)) {
                 // Missing resource or no D2D SVG support: keep a recognizable glyph.
                 if (!DrawFluentSvg(IDR_FLUENT_PC_SVG, logoRc, 1.0f, nullptr, true))
                     DrawIconText(logoRc.left, logoRc.top, logo, logo, L"\xE977", L"PC",
                                  theme.text_secondary, 1.0f);
             }
+            const float textX = logoX + logo + 14.0f * s;
+            const float textW = std::max(24.0f * s, contentRc.right - textX);
+            // Boxes follow the text size, so a larger interface font (125/150%)
+            // still fits the three lines inside the band.
+            IDWriteTextFormat* header_fmt = compositor_->HeaderFormat();
+            IDWriteTextFormat* small_fmt_h = compositor_->SmallFormat();
+            const float title_h = std::max(20.0f * s,
+                header_fmt ? header_fmt->GetFontSize() * 1.30f : 20.0f * s);
+            const float line_h = std::max(18.0f * s,
+                small_fmt_h ? small_fmt_h->GetFontSize() * 1.40f : 18.0f * s);
+            const float gap1 = 5.0f * s, gap2 = 3.0f * s;
+            // A long OS name wraps inside the identity block instead of ending
+            // in an ellipsis on narrow panels and in every UI language.
+            const auto os_text = SplitDetailLine(d.subtitle_text, textW,
+                                                 compositor_->DwriteFactory(), small_fmt_h);
+            const float os_h = (os_text.second.empty() ? 1.0f : 2.0f) * line_h;
+            const float blockH = title_h + gap1 + os_h + gap2 + line_h;
+            const float textY = logoTop + (logo - blockH) * 0.5f;
+            text(d.name, D2D1::RectF(textX, textY, textX + textW, textY + title_h),
+                 header_fmt, theme.text);
+            const float osTop = textY + title_h + gap1;
+            MakeBrush(dc, theme.text, brText_);
+            if (os_text.second.empty()) {
+                DrawTextEndEllipsis(compositor_, small_fmt_h, brText_.get(), d.subtitle_text,
+                                    textX, osTop, textW, line_h);
+            } else {
+                DrawTextEndEllipsis(compositor_, small_fmt_h, brText_.get(), os_text.first,
+                                    textX, osTop, textW, line_h);
+                DrawTextEndEllipsis(compositor_, small_fmt_h, brText_.get(), os_text.second,
+                                    textX, osTop + line_h, textW, line_h);
+            }
+            MakeBrush(dc, theme.text_secondary, brTextSecondary_);
+            DrawTextEndEllipsis(compositor_, small_fmt_h, brTextSecondary_.get(),
+                                d.pc_meta, textX, osTop + os_h + gap2, textW, line_h);
         } else if (d.preview_icon_only && preview_on && !d.is_dir && d.multi_count <= 1) {
             // 启用预览 › 详情面板预览 off: the well keeps the file-type icon the
             // way a folder's preview does, and the file itself is never read.
@@ -628,7 +703,10 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
             compositor_->SmallFormat(), theme.text_secondary, true);
     }
     if (d.preview_only) { dc->PopAxisAlignedClip(); return; }
-    y = previewTop + DetailsPreviewBand(previewH, s) - d.scroll_y * s;
+    const bool card_header_in_well = d.pc_card && d.preview_enabled && previewH > 1.0f;
+    y = (card_header_in_well
+             ? previewTop + previewH + 12.0f * s
+             : previewTop + DetailsPreviewBand(previewH, s)) - d.scroll_y * s;
     const D2D1_RECT_F restClip = D2D1::RectF(
         panel.left, hit.preview_toggle.bottom,
         panel.right, panel.bottom);
@@ -664,8 +742,9 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         }
     }
 
-    // Name + star + rename pencil + subtitle.
-    {
+    // Name + star + rename pencil + subtitle. The 此电脑 card already shows
+    // its title and identity in the well; only a collapsed well needs this row.
+    if (!card_header_in_well) {
         if (d.multi_count <= 1 && !d.context) {
             const bool starHot = IsHovered(vm, HitTestResult::DetailsStar);
             const bool renHot = IsHovered(vm, HitTestResult::DetailsRename);
@@ -727,8 +806,8 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
             text(subtitle, D2D1::RectF(panel.left + pad, y + 22.0f * s,
                                        panel.right - pad, y + 38.0f * s),
                  compositor_->SmallFormat(), theme.text_secondary);
+        y += 22.0f * s + 16.0f * s + 8.0f * s;
     }
-    y += 22.0f * s + 16.0f * s + 8.0f * s;
 
     // Button row: 打开 / 在新标签打开 / 复制路径 / 更多 (icon over label).
     // A context card has no actions: nothing is selected to act on.
@@ -819,9 +898,32 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
     };
 
     if (d.pc_card) {
-        // The system card: one fact per row. A folder card instead reuses the
-        // sections below, exactly as a selected folder does.
-        for (const auto& row : d.context_rows) infoRow(row.first.c_str(), row.second, y);
+        // The system card: one fact per line, the key in the accent ink and the
+        // value in a column shared by every row - a dense system sheet rather
+        // than a label/value form. A value too long for its column continues on
+        // a second line instead of being cut mid-name. A folder card instead
+        // reuses the sections below, exactly as a selected folder does.
+        IDWriteTextFormat* small_fmt = compositor_->SmallFormat();
+        IDWriteFactory2* factory = compositor_->DwriteFactory();
+        const float content_w = panel.right - panel.left - pad * 2.0f;
+        const float key_w = DetailsFactKeyWidth(d, content_w, s, factory, small_fmt);
+        const float valueX = panel.left + pad + key_w;
+        const float value_w = content_w - key_w;
+        const float avail = std::max(1.0f, value_w - 2.0f * s);
+        for (const auto& row : d.context_rows) {
+            text(row.first, D2D1::RectF(panel.left + pad, y, valueX - 4.0f * s,
+                                        y + kDetailsFactLineDip * s),
+                 small_fmt, theme.accent);
+            MakeBrush(dc, theme.text, brText_);
+            const auto split = SplitDetailLine(row.second, avail, factory, small_fmt);
+            DrawTextEndEllipsis(compositor_, small_fmt, brText_.get(), split.first, valueX, y,
+                                value_w, kDetailsFactLineDip * s);
+            if (!split.second.empty())
+                DrawTextEndEllipsis(compositor_, small_fmt, brText_.get(), split.second, valueX,
+                                    y + kDetailsFactLineDip * s, value_w,
+                                    kDetailsFactLineDip * s);
+            y += DetailsFactRowHeight(row.second, value_w, s, factory, small_fmt);
+        }
         y += 8.0f * s;
     } else if (d.multi_count > 1) {
         text(pulse::l10n::Get(pulse::l10n::StringId::Information),
@@ -1044,7 +1146,7 @@ float MainRenderer::DetailsContentHeightDip(const WindowViewModel& vm, float w, 
     LayoutDetailsPanel(panel, scale_, vm.details,
                        compositor_ ? compositor_->DwriteFactory() : nullptr,
                        compositor_ ? compositor_->SmallFormat() : nullptr,
-                       compositor_, DetailsPreviewHeight(panel, scale_, vm.details.preview_expansion), hit);
+                       compositor_, DetailsPanelPreviewHeight(vm.details, panel, scale_), hit);
     return hit.content_height_dip;
 }
 
