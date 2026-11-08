@@ -99,9 +99,9 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
     // 预览方式: hover card or Space only, then the hover delay.
     auto choice_row = [&](D2D1_RECT_F r, const D2D1_RECT_F* choices, int count, int checked,
                           PackAction first, const wchar_t* icon, std::wstring_view title,
-                          std::wstring_view desc, const wchar_t* (*label)(int)) {
+                          std::wstring_view desc, const wchar_t* (*label)(int), bool carded) {
         if (r.bottom <= r.top) return;
-        card(r);
+        if (carded) card(r);
         const bool stacked = choices[0].left < r.left + 100*s;
         const float right = stacked ? r.right - 16*s : choices[0].left - 12*s;
         DrawIconText(r.left + 16*s, r.top + 20*s, 24*s, 24*s, icon, L"", theme.text_secondary, 0.85f);
@@ -123,16 +123,65 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
         }
     };
     if (vm.settings_page != 8) {
-    text(pack_text::TriggerSection(), lay.trigger_section);
-    const int trigger = vm.settings_preview_trigger == 1 ? 1 : 0;
-    choice_row(lay.trigger_row, lay.trigger_choice, 2, trigger, PackAction::TriggerHover, L"\xE890",
-               pack_text::TriggerTitle(), pack_text::TriggerDesc(trigger), &pack_text::TriggerChoice);
-    const int delay = vm.settings_hover_delay_ms == 300 ? 0 : vm.settings_hover_delay_ms == 800 ? 2 : 1;
-    choice_row(lay.hover_delay_row, lay.hover_delay_choice, 3, delay, PackAction::HoverDelayShort, L"\xE916",
-               pack_text::DelayTitle(), pack_text::DelayDesc(), &pack_text::DelayChoice);
-    const int card_size = vm.settings_hover_card_size == 0 ? 0 : vm.settings_hover_card_size == 2 ? 2 : 1;
-    choice_row(lay.hover_size_row, lay.hover_size_choice, 3, card_size, PackAction::HoverSizeSmall, L"\xE740",
-               pack_text::SizeTitle(), pack_text::SizeDesc(), &pack_text::SizeChoice);
+    // 启用预览: the master switch, then its two children on the band the layout
+    // recorded. The children keep their own value while the gate is closed; they
+    // fade and turn inert there instead of disappearing, so the page still shows
+    // what switching it back on will bring back.
+    const bool previews_on = vm.settings_preview_enabled;
+    const bool hover_preview_on = previews_on && vm.settings_preview_hover_space;
+    {
+        auto dim = [&](bool on) {
+            if (on) dc->PushLayer(D2D1::LayerParameters1(D2D1::InfiniteRect(), nullptr,
+                D2D1_ANTIALIAS_MODE_PER_PRIMITIVE, D2D1::IdentityMatrix(), 0.42f, nullptr,
+                D2D1_LAYER_OPTIONS1_NONE), nullptr);
+            return on;
+        };
+        auto undim = [&](bool on) { if (on) dc->PopLayer(); };
+        auto switch_row = [&](D2D1_RECT_F r, std::wstring_view title, std::wstring_view desc,
+                              bool on, PackAction action, bool enabled) {
+            setting(r, L"", title, desc);
+            fluent::ControlState state{};
+            state.checked = on;
+            state.enabled = enabled;
+            state.hovered = enabled && hovered(action);
+            painter_.DrawSwitch(row_switch(r), L"", state);
+        };
+        // The tinted band and its guide line, like the dependent rows on page 9.
+        for (const auto& band : lay.child_bands) {
+            MakeBrush(dc, WithAlpha(theme.text, vm.dark ? 0.035f : 0.024f), brFillHover_);
+            dc->FillRoundedRectangle(D2D1::RoundedRect(band, 8*s, 8*s), brFillHover_.get());
+            MakeBrush(dc, WithAlpha(theme.text_secondary, 0.32f), brTextSecondary_);
+            FillRoundedRect(dc, brTextSecondary_.get(), band.left + 29*s, band.top + 12*s,
+                            1.5f*s, (std::max)(0.0f, band.bottom - band.top - 24*s), 0.75f*s);
+        }
+        MakeBrush(dc, theme.stroke_divider, brStrokeDivider_);
+        for (const auto& d : lay.dividers)
+            FillRect(dc, brStrokeDivider_.get(), d.left, d.top, d.right - d.left, 1);
+
+        switch_row(lay.preview_master_row, pack_text::MasterTitle(), pack_text::MasterDesc(),
+                   previews_on, PackAction::PreviewMaster, true);
+        bool faded = dim(!previews_on);
+        switch_row(lay.preview_hover_row, pack_text::HoverChildTitle(), pack_text::HoverChildDesc(),
+                   vm.settings_preview_hover_space, PackAction::PreviewHoverSpace, previews_on);
+        undim(faded);
+        // 预览方式, 悬停延迟 and 卡片尺寸 belong to 悬停与空格预览, so they fade
+        // with that child too.
+        faded = dim(!hover_preview_on);
+        const int trigger = vm.settings_preview_trigger == 1 ? 1 : 0;
+        choice_row(lay.trigger_row, lay.trigger_choice, 2, trigger, PackAction::TriggerHover, L"\xE890",
+                   pack_text::TriggerTitle(), pack_text::TriggerDesc(trigger), &pack_text::TriggerChoice, false);
+        const int delay = vm.settings_hover_delay_ms == 300 ? 0 : vm.settings_hover_delay_ms == 800 ? 2 : 1;
+        choice_row(lay.hover_delay_row, lay.hover_delay_choice, 3, delay, PackAction::HoverDelayShort, L"\xE916",
+                   pack_text::DelayTitle(), pack_text::DelayDesc(), &pack_text::DelayChoice, false);
+        const int card_size = vm.settings_hover_card_size == 0 ? 0 : vm.settings_hover_card_size == 2 ? 2 : 1;
+        choice_row(lay.hover_size_row, lay.hover_size_choice, 3, card_size, PackAction::HoverSizeSmall, L"\xE740",
+                   pack_text::SizeTitle(), pack_text::SizeDesc(), &pack_text::SizeChoice, false);
+        undim(faded);
+        faded = dim(!previews_on);
+        switch_row(lay.preview_details_row, pack_text::DetailsChildTitle(), pack_text::DetailsChildDesc(),
+                   vm.settings_preview_details, PackAction::PreviewDetails, previews_on);
+        undim(faded);
+    }
 
     text(pack_text::FormatsSection(), lay.preview_section);
     card(lay.preview_group);

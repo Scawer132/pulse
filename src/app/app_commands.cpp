@@ -17,6 +17,8 @@
 #include "../ui/toolbar_layout.h"
 #include "../ui/command_icons.h"
 #include "app_internal.h"
+#include "app_hover_preview.h"
+#include "app_preview_policy.h"
 #include "app_sidebar_refresh.h"
 #include "favorites_bar.h"
 #include "tray_reveal.h"
@@ -5603,6 +5605,8 @@ bool SelectedQuickPreviewItem(AppState& s, ui::QuickPreviewItem& item) {
 }
 
 void ToggleQuickPreview(AppState& s) {
+    // 启用预览 › 悬停与空格预览 off: Space has nothing to open.
+    if (!app::HoverSpacePreviewOn(s.appPrefs)) return;
     if (s.quickPreview.visible()) {
         s.quickPreview.Close();
         return;
@@ -5800,6 +5804,24 @@ void ApplySettingsEffects(AppState& s, app::SettingsEffect effects) {
         ApplyGlobalSearchSettings(s);
     if (app::HasEffect(effects, app::SettingsEffect::StatusBarPerformance))
         s.showFps = s.forceStatusPerformance || s.appPrefs.show_status_performance;
+    if (app::HasEffect(effects, app::SettingsEffect::PreviewPolicy)) {
+        const bool hover_on = app::HoverSpacePreviewOn(s.appPrefs);
+        const bool details_on = app::DetailsPreviewContentOn(s.appPrefs);
+        // Close what the switch just closed: a Quick Look window or a hover card
+        // left on screen would keep previewing a file nothing asked for.
+        if (!hover_on) {
+            if (s.quickPreview.visible()) s.quickPreview.Close();
+            HideHoverPreview(s);
+        }
+        if (!details_on) {
+            // 只看预览 fills the panel with the content that is now off.
+            s.detailsPreviewOnly = false;
+            s.detailsPreviewExpansion = 0.0f;
+        }
+        // The hosts own the child processes; releasing them is what makes the
+        // switch mean "no preview process" and not just "no new requests".
+        s.renderer.ReleasePreviewHosts(!details_on, !hover_on);
+    }
     if (app::HasEffect(effects, app::SettingsEffect::Language)) {
         l10n::SetLanguage(s.appPrefs.language);
         RefreshSidebarModel(s);

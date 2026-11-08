@@ -1801,7 +1801,8 @@ void ClearTextWidthCache() {
         out.preview = D2D1::RectF(x, panel.top + pad, panel.right - pad,
                                   panel.top + pad + preview_h);
         const float previewBottom = panel.top + pad + preview_h;
-        if (d.cloud_online && d.preview_enabled && d.multi_count <= 1 && d.cloud_download_percent < 0) {
+        if (d.cloud_online && d.preview_enabled && !d.preview_icon_only && d.multi_count <= 1 &&
+            d.cloud_download_percent < 0) {
             const std::wstring label = pulse::l10n::Get(pulse::l10n::StringId::CloudDownloadPreview);
             const float label_w = dwrite && small_fmt
                 ? MeasureLayoutText(compositor, dwrite, small_fmt, label) : 90.0f * s;
@@ -2525,6 +2526,9 @@ struct SettingsLayout {
     // Quick Look page: 预览方式 (hover card or Space) and the hover delay.
     D2D1_RECT_F trigger_section{}, trigger_row{}, trigger_choice[2]{}, hover_delay_row{}, hover_delay_choice[3]{};
     D2D1_RECT_F hover_size_row{}, hover_size_choice[3]{};  // 卡片尺寸: 小 / 中 / 大
+    // Quick Look page: 启用预览 and its two children (悬停与空格预览, 详情面板预览),
+    // laid out as a master row with the children on a tinted band below it.
+    D2D1_RECT_F preview_master_row{}, preview_hover_row{}, preview_details_row{};
     // Quick Look page: formats, source legend and system extensions.
     D2D1_RECT_F preview_section{}, preview_group{}, preview_formats{}, preview_legend{}, preview_legend_note{};
     D2D1_RECT_F preview_header_title{}, preview_header_summary{};

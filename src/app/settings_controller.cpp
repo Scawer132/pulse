@@ -943,6 +943,24 @@ void SettingsController::HoverCardSize(int index) {
         SaveAndApply(SettingsEffect::None);
 }
 
+void SettingsController::PreviewEnabled(bool on) {
+    if (!prefs_ || prefs_->preview_enabled == on) return;
+    prefs_->preview_enabled = on;
+    SaveAndApply(SettingsEffect::PreviewPolicy);
+}
+
+void SettingsController::PreviewHoverSpace(bool on) {
+    if (!prefs_ || prefs_->preview_hover_space == on) return;
+    prefs_->preview_hover_space = on;
+    SaveAndApply(SettingsEffect::PreviewPolicy);
+}
+
+void SettingsController::PreviewDetailsContent(bool on) {
+    if (!prefs_ || prefs_->preview_details_content == on) return;
+    prefs_->preview_details_content = on;
+    SaveAndApply(SettingsEffect::PreviewPolicy);
+}
+
 void SettingsController::HomeFolder(int action) {
     if (!prefs_) return;
     if (action == 0) {

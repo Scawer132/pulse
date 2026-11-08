@@ -2,6 +2,7 @@
 #include "app_hover_preview.h"
 #include "../fs/cloud_state.h"
 #include "app_internal.h"
+#include "app_preview_policy.h"
 #include "app_details_tree.h"
 #include "entry_sort.h"
 #include "../common/localization.h"
@@ -52,7 +53,9 @@ namespace {
 constexpr UINT kHoverPrefetchSettleMs = 150;
 
 bool HoverPreviewOn(const AppState& s) {
-    return s.appPrefs.preview_trigger == app::kPreviewTriggerHover && !s.safeMode;
+    // 启用预览 › 悬停与空格预览: the master gate closes both previews.
+    return app::HoverSpacePreviewOn(s.appPrefs) &&
+        s.appPrefs.preview_trigger == app::kPreviewTriggerHover && !s.safeMode;
 }
 
 // The shell's name for the file type ("JPEG 图像"), by extension: a registry

@@ -151,6 +151,12 @@ struct AppPrefs {
     // The card's size step: 0 small, 1 medium, 2 large (kHoverCardSize*). The
     // card takes the content's shape within it; Ctrl enlarges it while held.
     int hover_card_size = 1;
+    // 快速预览 › 启用预览: the master gate. Its two children keep their own value
+    // while it is off, so switching it back on restores exactly what was chosen
+    // (app_preview_policy.h has the combined predicates).
+    bool preview_enabled = true;          // hover card, Space and the details well
+    bool preview_hover_space = true;      // 悬停与空格预览 (still follows preview_trigger)
+    bool preview_details_content = true;  // 详情面板预览文件内容; off draws the file icon
     bool change_tracking_enabled = false;
     int change_tracking_days = 7;
     // system / zh-CN / en-US

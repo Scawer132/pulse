@@ -700,6 +700,9 @@ struct DetailsPanelView {
     float scroll_y = 0.0f;
     bool preview_only = false;
     bool preview_enabled = true;    // off: no preview request, placeholder only
+    // 启用预览 › 详情面板预览 off: the well stays, draws the file-type icon and
+    // asks no host for the selection (app_preview_policy.h).
+    bool preview_icon_only = false;
     float preview_expansion = 0.0f;
     uint32_t collapsed_mask = 0;    // bit per section: 0基本信息 1属性 2标签 3安全 4其他
     std::wstring location_text, size_text, contains_text;
@@ -938,6 +941,9 @@ enum class PackAction : int {
     AiRemove,           // AI pack: uninstall (asks first)
     AiCancel,           // AI pack: stop the running download
     AiManage,           // AI pack: open 增强包 > AI 与 MCP (kSettingsPageAi)
+    PreviewMaster,      // 快速预览 › 启用预览: on / off
+    PreviewHoverSpace,  // 悬停与空格预览: on / off (child of PreviewMaster)
+    PreviewDetails,     // 详情面板预览: on / off (child of PreviewMaster)
 };
 
 // A tab dragged out of another window, over this one (multi-window M7h): the
@@ -1284,6 +1290,11 @@ struct WindowViewModel {
     int settings_preview_trigger = 0;      // app::kPreviewTrigger*
     int settings_hover_delay_ms = 500;     // 300 / 500 / 800
     int settings_hover_card_size = 1;      // 0 small, 1 medium, 2 large
+    // 快速预览 › 启用预览 and its two children; the children keep their value
+    // while the master is off and are drawn faded there.
+    bool settings_preview_enabled = true;
+    bool settings_preview_hover_space = true;
+    bool settings_preview_details = true;
     bool settings_change_tracking = false;
     int settings_change_days = 3;
     int settings_row_height = 34; // current row-height pref (DIPs) for density radios

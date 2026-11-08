@@ -164,6 +164,47 @@ int RunQuickLookSettingsTest(pulse::AppState& s, const wchar_t* output) {
                 controls_ok &= text.right <= badge.left || text.bottom <= badge.top;
             }
             check(controls_ok, "codec labels and status controls never overlap");
+            {   // 启用预览: master switch, then both children on one dependent band.
+                const auto master = lay.preview_master_row;
+                const auto hover_child = lay.preview_hover_row;
+                const auto details_child = lay.preview_details_row;
+                check(master.bottom > master.top && hover_child.top >= master.bottom &&
+                      details_child.top > hover_child.top && details_child.bottom > details_child.top,
+                      "启用预览 sits above both child switches");
+                check(lay.child_bands.size() == 1 && lay.child_bands[0].top >= master.bottom &&
+                      lay.child_bands[0].bottom >= details_child.bottom &&
+                      lay.child_bands[0].left == lay.content.left + 20*scale,
+                      "the two children share one indented dependent-row band");
+                auto hit_at = [&](const ui::WindowViewModel& model, D2D1_RECT_F row) {
+                    return s.renderer.HitTest(model, rect, row.right - 37*scale, (row.top + row.bottom)/2);
+                };
+                const auto master_hit = hit_at(vm, master);
+                check(master_hit.region == H::SettingsPackAction &&
+                      master_hit.index == static_cast<int>(ui::PackAction::PreviewMaster),
+                      "the master row hits 启用预览");
+                check(hit_at(vm, hover_child).index == static_cast<int>(ui::PackAction::PreviewHoverSpace) &&
+                      hit_at(vm, details_child).index == static_cast<int>(ui::PackAction::PreviewDetails),
+                      "both child switches hit their own actions");
+                auto gate_off = vm;
+                gate_off.settings_preview_enabled = false;
+                check(hit_at(gate_off, hover_child).region != H::SettingsPackAction &&
+                      hit_at(gate_off, details_child).region != H::SettingsPackAction &&
+                      hit_at(gate_off, master).index == static_cast<int>(ui::PackAction::PreviewMaster),
+                      "children are inert while the master gate is off, the gate stays live");
+                auto hover_off = vm;
+                hover_off.settings_preview_hover_space = false;
+                check(hit_at(hover_off, lay.trigger_choice[0]).region != H::SettingsPackAction &&
+                      hit_at(hover_off, hover_child).index == static_cast<int>(ui::PackAction::PreviewHoverSpace) &&
+                      hit_at(hover_off, details_child).index == static_cast<int>(ui::PackAction::PreviewDetails),
+                      "the hover options follow 悬停与空格预览, the other child stays live");
+                auto space_only = vm;
+                space_only.settings_preview_trigger = 1;
+                const auto space_lay = ui::MakeSettingsLayout(space_only, rect, scale,
+                    s.renderer.TitleBarHeight(), 28*scale, &painter);
+                check(space_lay.trigger_row.bottom > space_lay.trigger_row.top &&
+                      space_lay.hover_delay_row.bottom == space_lay.hover_delay_row.top,
+                      "Space-only previews keep 预览方式 and drop the hover delay");
+            }
             if (installed) {
                 // Current packs show no 更新到; older ones show it left of 卸载, with its own target.
                 check(lay.pack_update.right <= lay.pack_update.left && lay.pack_images_update.right <= lay.pack_images_update.left &&
@@ -232,6 +273,20 @@ int RunQuickLookSettingsTest(pulse::AppState& s, const wchar_t* output) {
                 }
             }
             if (language[0] == L'z' && scale == 1 && ((width == 1280 && font == 100) || (width == 760 && font == 125))) {
+                // 启用预览 open and closed: the children stay listed, faded.
+                if (!installed) {
+                    for (const bool gate : {true, false}) {
+                        auto shot = vm;
+                        shot.dark = false;
+                        shot.settings_preview_enabled = gate;
+                        shot.settings_scroll = 0;
+                        const auto theme = ui::MakeTheme(false, ui::HexColor(0x4F7766));
+                        s.compositor.Dc()->BeginDraw(); s.renderer.Render(shot, rect, theme); s.compositor.Dc()->EndDraw();
+                        const auto name = L"quicklook-" + std::to_wstring(width) + L"-font" + std::to_wstring(font) +
+                            (gate ? L"-gate-on.png" : L"-gate-off.png");
+                        check(s.compositor.SaveSnapshot((folder / name).c_str()), "启用预览 screenshot saved");
+                    }
+                }
                 for (const bool dark : {false, true}) for (int section = 0; section < 4; ++section) {
                     vm.dark = dark;
                     auto shot = vm;

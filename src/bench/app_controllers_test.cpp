@@ -1,4 +1,5 @@
 #include "../app/settings_controller.h"
+#include "../app/app_preview_policy.h"
 #include "../app/address_bar_command.h"
 #include "../app/session.h"
 #include "../app/layout_pane_selection.h"
@@ -2226,6 +2227,46 @@ int wmain(int argc, wchar_t** argv) {
         parsed_prefs.hover_card_size = kHoverCardLarge;
         parsed_prefs.ResetToDefaults();
         passed &= Report("reset restores the medium hover card", parsed_prefs.hover_card_size == kHoverCardMedium);
+    }
+    {
+        // 快速预览 › 启用预览 is a gate: its two children keep their own value
+        // while it is closed, so reopening it restores what was chosen.
+        passed &= Report("previews are on by default",
+            prefs.preview_enabled && prefs.preview_hover_space && prefs.preview_details_content);
+        passed &= Report("preferences without the keys keep every preview on",
+            parsed_prefs.FromJson(L"{}") && parsed_prefs.preview_enabled &&
+            parsed_prefs.preview_hover_space && parsed_prefs.preview_details_content);
+        settings_ui.PreviewHoverSpace(false);
+        settings_ui.PreviewDetailsContent(false);
+        passed &= Report("each child switch alone turns its preview off",
+            prefs.preview_enabled && !pulse::app::HoverSpacePreviewOn(prefs) &&
+            !pulse::app::DetailsPreviewContentOn(prefs) &&
+            parsed_prefs.FromJson(prefs.ToJson()) && !parsed_prefs.preview_hover_space &&
+            !parsed_prefs.preview_details_content);
+        settings_ui.PreviewEnabled(false);
+        passed &= Report("the master gate closes both previews and persists",
+            !prefs.preview_enabled && !pulse::app::HoverSpacePreviewOn(prefs) &&
+            !pulse::app::DetailsPreviewContentOn(prefs) &&
+            parsed_prefs.FromJson(prefs.ToJson()) && !parsed_prefs.preview_enabled);
+        settings_ui.PreviewEnabled(true);
+        passed &= Report("reopening the gate restores the children's own values",
+            prefs.preview_enabled && !pulse::app::HoverSpacePreviewOn(prefs) &&
+            !pulse::app::DetailsPreviewContentOn(prefs));
+        settings_ui.PreviewHoverSpace(true);
+        settings_ui.PreviewDetailsContent(true);
+        passed &= Report("the gate and its children are independent values",
+            pulse::app::HoverSpacePreviewOn(prefs) && pulse::app::DetailsPreviewContentOn(prefs) &&
+            parsed_prefs.FromJson(prefs.ToJson()) && pulse::app::HoverSpacePreviewOn(parsed_prefs));
+        parsed_prefs.preview_enabled = false;
+        parsed_prefs.preview_hover_space = true;
+        parsed_prefs.preview_details_content = true;
+        passed &= Report("a closed gate wins over an enabled child",
+            !pulse::app::HoverSpacePreviewOn(parsed_prefs) &&
+            !pulse::app::DetailsPreviewContentOn(parsed_prefs));
+        parsed_prefs.ResetToDefaults();
+        passed &= Report("reset opens the gate and both children",
+            pulse::app::HoverSpacePreviewOn(parsed_prefs) &&
+            pulse::app::DetailsPreviewContentOn(parsed_prefs));
     }
     passed &= Report("closing the last tab setting has localized text",
         pulse::l10n::Get(pulse::l10n::StringId::SettingsCloseLastTab) ==

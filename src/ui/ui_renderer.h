@@ -317,6 +317,9 @@ public:
     bool BeginDetailsPreviewPan(float x, float y);
     void MoveDetailsPreviewPan(float x, float y);
     void EndDetailsPreviewPan() { details_preview_dragging_ = false; details_preview_drag_pending_ = false; }
+    // 启用预览 turned off: drop the details well's handler and the decoded bits,
+    // and stop the hosts behind them so no Pulse.Preview.exe stays running.
+    void ReleasePreviewHosts(bool details, bool hover);
     bool DetailsPreviewDragging() const { return details_preview_dragging_; }
     bool DetailsPreviewPointerActive() const { return details_preview_dragging_ || details_preview_drag_pending_; }
     bool CanDetailsPreviewPan() const { return details_preview_ready_; }
