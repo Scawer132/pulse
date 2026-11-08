@@ -330,6 +330,22 @@ void ThumbnailCache::Reset() {
     draw_retry_deadline_ = 0;
     epoch_.fetch_add(1, std::memory_order_relaxed);
 }
+void ThumbnailCache::StopHosts() {
+    // The same teardown as Reset, minus the decoded items (see the header).
+    running_ = false; cv_.notify_all();
+    if (worker_.joinable()) CancelSynchronousIo(worker_.native_handle());
+    for (auto& lane : extra_lanes_)
+        if (lane.worker.joinable()) CancelSynchronousIo(lane.worker.native_handle());
+    if (worker_.joinable()) worker_.join();
+    for (auto& lane : extra_lanes_)
+        if (lane.worker.joinable()) lane.worker.join();
+    StopChildren();
+    std::lock_guard lock(mutex_);
+    queue_.clear(); pending_.clear(); folder_requests_.clear(); wanted_.clear();
+    slow_in_flight_ = 0; transient_failures_.clear(); retry_interest_.clear();
+    draw_retry_deadline_ = 0;
+    epoch_.fetch_add(1, std::memory_order_relaxed);
+}
 void ThumbnailCache::BeginFrame() {
     std::lock_guard lock(mutex_);
     track_retry_interest_ = true;

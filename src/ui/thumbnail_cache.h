@@ -103,6 +103,10 @@ public:
     // as thumbnails is still being listed).
     void Warm();
     void Reset();
+    // Stops the host processes but keeps what was decoded: a preview surface
+    // that is hidden should not hold a process, and showing it again should not
+    // decode the same file twice. The next request starts a host again.
+    void StopHosts();
     void Evict();
     void BeginFrame();
     uint64_t NextRetryDeadline();

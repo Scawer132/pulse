@@ -71,14 +71,9 @@ void MainRenderer::ReleasePreviewHosts(bool details, bool hover) {
         details_preview_ready_ = false;
         details_preview_archive_ = false;
         EndDetailsPreviewPan();
-        details_cache_.Reset();
-        // Reset unbinds the device; without this later uploads would fail.
-        if (compositor_) details_cache_.SetDeviceContext(compositor_->Dc());
+        details_cache_.StopHosts();
     }
-    if (hover) {
-        hover_cache_.Reset();
-        if (compositor_) hover_cache_.SetDeviceContext(compositor_->Dc());
-    }
+    if (hover) hover_cache_.StopHosts();
 }
 void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F& rect,
                                     const Theme& theme) {
@@ -260,7 +255,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         const bool content_preview = preview_on && !d.preview_icon_only;
         const bool handlerPreview = content_preview && !vm.safe_mode && !placeholderOnly &&
             !d.cloud_online && PreviewHandlerHost::CanHost(d.path);
-        if (!placeholderOnly) {
+        if (!placeholderOnly && !d.preview_icon_only) {
             MakeBrush(dc, theme.fill_hover, brFillInput_);
             FillRoundedRect(dc, brFillInput_.get(), previewRc.left, previewRc.top,
                             previewRc.right - previewRc.left,

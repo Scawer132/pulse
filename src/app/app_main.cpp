@@ -4606,6 +4606,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
             const int result = RunQuickLookSettingsTest(state, quicklook_settings);
             DestroyWindow(hwnd); OleUninitialize(); return result;
         }
+        wchar_t preview_switch[32768]{};
+        if (state.isolatedTest && GetEnvironmentVariableW(L"PULSE_TEST_PREVIEW_SWITCH", preview_switch, ARRAYSIZE(preview_switch))) {
+            extern int RunPreviewSwitchProbe(AppState&, const wchar_t*);
+            const int result = RunPreviewSwitchProbe(state, preview_switch);
+            DestroyWindow(hwnd); OleUninitialize(); return result;
+        }
         if (state.isolatedTest && GetEnvironmentVariableW(L"PULSE_TEST_SETTINGS_INTERACTIONS",settings_interactions,ARRAYSIZE(settings_interactions))) {
             extern int RunSettingsInteractionTest(AppState&,const wchar_t*);
             const int result=RunSettingsInteractionTest(state,settings_interactions);
