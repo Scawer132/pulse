@@ -12,15 +12,28 @@ namespace {
 HINSTANCE g_module = nullptr;
 std::atomic<Language> g_preference{Language::System};
 std::atomic<Language> g_effective{Language::EnUS};
-std::mutex g_mutex;
 // Published strings stay immutable when the UI language changes. Workers may
 // still hold references to the previous language while finishing an operation.
 constexpr size_t kLocaleCount = 3;
 // Keyed by id, so a newly added string never falls outside a fixed range
 // (that once left every new label blank). Entries are never erased, and an
 // unordered_map keeps element references valid across inserts.
-std::array<std::unordered_map<UINT, std::wstring>, kLocaleCount> g_cache;
-const std::wstring g_empty;
+// Never destroyed: SeedShellVerbCache's detached thread can still call Get
+// while exit() runs static destructors, and reading a destroyed map crashes it
+// (the same window the icon cache in app/shell_verbs.cpp works around). The
+// namespace-scope references below have no destructor of their own.
+struct Storage {
+    std::mutex mutex;
+    std::array<std::unordered_map<UINT, std::wstring>, kLocaleCount> cache;
+    std::wstring empty;
+};
+Storage& Store() {
+    static Storage& storage = *new Storage;
+    return storage;
+}
+std::mutex& g_mutex = Store().mutex;
+std::array<std::unordered_map<UINT, std::wstring>, kLocaleCount>& g_cache = Store().cache;
+const std::wstring& g_empty = Store().empty;
 
 Language SystemLanguage() noexcept {
     return LanguageFromLangId(GetUserDefaultUILanguage());
