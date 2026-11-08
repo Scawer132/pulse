@@ -680,6 +680,11 @@ add_executable(pulse_index WIN32
 target_sources(pulse_index PRIVATE src/index/index_host.rc)
 target_link_options(pulse_index PRIVATE /MANIFEST:NO)
 set_target_properties(pulse_index PROPERTIES OUTPUT_NAME "Pulse.Index")
+if(PULSE_LOCAL_PROFILE)
+    # The helper this build spawns keeps its index (and network index) under the
+    # local profile folder instead of the installed copy's per-user index.
+    target_compile_definitions(pulse_index PRIVATE PULSE_LOCAL_PROFILE=1)
+endif()
 target_link_libraries(pulse_index PRIVATE advapi32 shlwapi ole32 shell32 netapi32 mpr bcrypt pulse_localization
     pulse_crash_reporter pulse_text)
 pulse_add_version_resource(pulse_index "Pulse index host" "Pulse.Index" "Pulse.Index.exe")

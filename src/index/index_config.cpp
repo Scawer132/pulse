@@ -1,5 +1,6 @@
 #include "index_config.h"
 #include "../fs/drive_kind.h"
+#include "../common/local_profile.h"
 #include "index_directory_security.h"
 #include "../common/config_json.h"
 #include "../common/json_utils.h"
@@ -290,7 +291,9 @@ bool ProtectIndexDirectory(const std::wstring& path) {
 std::wstring UserIndexRoot() {
     std::wstring root = KnownFolder(CSIDL_LOCAL_APPDATA);
     if (root.empty()) return {};
-    const std::wstring pulse = root + L"\\Pulse";
+    // A local-profile build's helper keeps its index beside its own settings, so
+    // building it never rewrites the installed copy's per-user index.
+    const std::wstring pulse = root + L"\\" + pulse::local_profile::kFolderName;
     if (!EnsureDirectory(pulse)) return {};
     return pulse;
 }
