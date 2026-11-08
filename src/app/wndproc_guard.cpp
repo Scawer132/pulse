@@ -7,9 +7,11 @@
 namespace pulse::app {
 namespace {
 
-// Normal messages nest 1-3 deep (a menu or a drag over a frame); anything
-// deeper is worth a line in the diagnostics log so the peak can be tuned.
-constexpr int kPeakReportDepth = 8;
+// Normal messages nest 1-2 deep (a modal menu or drag loop adds one), so 3 is
+// the first depth worth a line: a deeper chain is what phase 3 of the plan
+// wants to see. The 5 s rate limit keeps a menu that stays open from filling
+// the log.
+constexpr int kPeakReportDepth = 3;
 constexpr ULONGLONG kPeakReportMs = 5000;
 
 thread_local int t_depth = 0;
