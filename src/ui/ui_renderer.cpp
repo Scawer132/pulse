@@ -1100,16 +1100,20 @@ bool MainRenderer::HoverRowDamage(int pane_index, int old_source, int new_source
 bool MainRenderer::HoverMotionDamage(D2D1_RECT_F* out) const {
     if (!out) return false;
     const uint64_t m = motion::NowMs();
+    // A plate-only frame samples just the plate's row, so a pane that draws
+    // tree guides loses every row of its ListShiftMotion baseline and the
+    // next small list change (an inline folder expand) reads them all as new
+    // and flashes the pane. Split layouts count too: the gliding plate may
+    // sit in another pane while this one's rows are all skipped (DrawPane
+    // walks every slot; only the row loop honors the damage). Same rule as
+    // HoverRowDamage above.
+    for (size_t i = 0; i < tree_guides_drawn_.size(); ++i)
+        if (tree_guides_drawn_[i]) return false;
     D2D1_RECT_F r{};
     bool any = false;
     for (size_t i = 0; i < list_hover_motion_.size(); ++i) {
         if (!list_hover_motion_[i].Active(m)) continue;
         if (i >= drawn_rows_.size() || drawn_rows_[i].empty()) return false;
-        // A plate-only frame samples just the plate's row, so the pane's
-        // ListShiftMotion baseline loses every other row and the next small
-        // list change (an inline folder expand) reads them all as new and
-        // flashes the pane. Same rule as HoverRowDamage above.
-        if (tree_guides_drawn_[i]) return false;
         UnionInto(r, any, list_hover_motion_[i].Span());
     }
     if (!any) return false;
