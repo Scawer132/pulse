@@ -14,6 +14,18 @@
 
 namespace pulse::index {
 
+// A build with its own data profile must not drive the machine-wide PulseIndex
+// service: it cannot tell the installed copy's service from its own, and asking
+// SCM to start it would launch that copy's background indexer. Such a build
+// starts its own Pulse.Index.exe helper instead, and only uses a service that is
+// already running.
+inline constexpr bool kDrivesIndexService =
+#ifdef PULSE_LOCAL_PROFILE
+    false;
+#else
+    true;
+#endif
+
 class IndexClient {
 public:
     IndexClient() = default;

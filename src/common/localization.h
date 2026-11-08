@@ -4414,6 +4414,17 @@ enum class StringId : UINT {
     SettingsFolderSizes = IDS_SETTINGS_FOLDER_SIZES,
     SettingsFolderSizesDesc = IDS_SETTINGS_FOLDER_SIZES_DESC,
     DetailsCalcSize = IDS_DETAILS_CALC_SIZE,
+    PreviewEnableTitle = IDS_PREVIEW_ENABLE_TITLE,
+    PreviewEnableDesc = IDS_PREVIEW_ENABLE_DESC,
+    PreviewHoverSpaceTitle = IDS_PREVIEW_HOVER_SPACE_TITLE,
+    PreviewHoverSpaceDesc = IDS_PREVIEW_HOVER_SPACE_DESC,
+    PreviewDetailsTitle = IDS_PREVIEW_DETAILS_TITLE,
+    PreviewDetailsDesc = IDS_PREVIEW_DETAILS_DESC,
+    StatusHintIdleNoPreview = IDS_STATUS_HINT_IDLE_NO_PREVIEW,
+    StatusHintIdleNoPreviewNoSearch = IDS_STATUS_HINT_IDLE_NO_PREVIEW_NO_SEARCH,
+    StatusHintSelectedNoPreview = IDS_STATUS_HINT_SELECTED_NO_PREVIEW,
+    HintFolderSelNoPreview = IDS_HINT_FOLDER_SEL_NO_PREVIEW,
+    HintSearchResultSelNoPreview = IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW,
 };
 
 bool IsLanguageId(std::wstring_view id) noexcept;

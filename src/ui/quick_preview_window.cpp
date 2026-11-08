@@ -440,6 +440,10 @@ void QuickPreviewWindow::FinishClose(bool restore_focus) {
         KillTimer(hwnd_, kZoomCloseTimer);
         ShowWindow(hwnd_, SW_HIDE);
     }
+    // A closed preview must not keep its decode host running; what was decoded
+    // stays for the next show, which starts a host again only if it needs one.
+    thumbnails_.StopHosts();
+    preview_pixels_ = 0;
     compositor_.ClearZoom();
     if (restore_focus && owner_) SetForegroundWindow(owner_);
 }

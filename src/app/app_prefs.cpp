@@ -123,6 +123,7 @@ void AppPrefs::ResetToDefaults() {
     preview_trigger = kPreviewTriggerHover;
     hover_preview_delay_ms = 500;
     hover_card_size = kHoverCardMedium;
+    preview_enabled = preview_hover_space = preview_details_content = true;
     change_tracking_enabled = false;
     change_tracking_days = 7;
     theme_mode = -1;
@@ -311,6 +312,12 @@ std::wstring AppPrefs::ToJson() const {
     out += L",\n  \"preview_trigger\":" + std::to_wstring(NormalizePreviewTrigger(preview_trigger));
     out += L",\n  \"hover_preview_delay_ms\":" + std::to_wstring(NormalizeHoverPreviewDelay(hover_preview_delay_ms));
     out += L",\n  \"hover_card_size\":" + std::to_wstring(NormalizeHoverCardSize(hover_card_size));
+    out += L",\n  \"preview_enabled\":";
+    out += preview_enabled ? L"true" : L"false";
+    out += L",\n  \"preview_hover_space\":";
+    out += preview_hover_space ? L"true" : L"false";
+    out += L",\n  \"preview_details_content\":";
+    out += preview_details_content ? L"true" : L"false";
     out += L",\n  \"change_tracking_enabled\":";
     out += change_tracking_enabled ? L"true" : L"false";
     out += L",\n  \"change_tracking_days\":";
@@ -573,6 +580,11 @@ bool AppPrefs::FromJson(const std::wstring& json) {
         pulse::json::ExtractInt(json, L"hover_preview_delay_ms", 500));
     hover_card_size = NormalizeHoverCardSize(
         pulse::json::ExtractInt(json, L"hover_card_size", kHoverCardMedium));
+    // Missing keys keep previews on, as every file written before the master
+    // gate behaved; the gate and its two children stay independent values.
+    preview_enabled = pulse::json::ExtractBool(json, L"preview_enabled", true);
+    preview_hover_space = pulse::json::ExtractBool(json, L"preview_hover_space", true);
+    preview_details_content = pulse::json::ExtractBool(json, L"preview_details_content", true);
     change_tracking_enabled = pulse::json::ExtractBool(json, L"change_tracking_enabled", false);
     change_tracking_days = pulse::json::ExtractInt(json, L"change_tracking_days", 7);
     if (change_tracking_days != 1 && change_tracking_days != 3 && change_tracking_days != 7)

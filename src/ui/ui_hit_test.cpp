@@ -763,8 +763,22 @@ HitTestResult MainRenderer::HitTest(const WindowViewModel& vm, const D2D1_RECT_F
                     {&lay.hover_size_choice[0], PackAction::HoverSizeSmall},
                     {&lay.hover_size_choice[1], PackAction::HoverSizeMedium},
                     {&lay.hover_size_choice[2], PackAction::HoverSizeLarge},
+                    {&lay.preview_master_row, PackAction::PreviewMaster},
+                    {&lay.preview_hover_row, PackAction::PreviewHoverSpace},
+                    {&lay.preview_details_row, PackAction::PreviewDetails},
                 };
+                // 启用预览 is the gate: its children and the hover options they
+                // own are faded and inert while it is off, and the hover options
+                // also need 悬停与空格预览 itself.
+                const bool previews_on = vm.settings_preview_enabled;
                 for (const auto& [bounds, action] : pack_targets) {
+                    const int action_value = static_cast<int>(action);
+                    const bool preview_child = action == PackAction::PreviewHoverSpace ||
+                        action == PackAction::PreviewDetails;
+                    const bool hover_option = action_value >= static_cast<int>(PackAction::TriggerHover) &&
+                        action_value <= static_cast<int>(PackAction::HoverSizeLarge);
+                    if (!previews_on && (preview_child || hover_option)) continue;
+                    if (!vm.settings_preview_hover_space && hover_option) continue;
                     if (action == PackAction::Install && !pack_text::PrimaryEnabled(vm.settings_pack_media_available,
                         vm.settings_pack_media_installed, vm.settings_pack_installing)) continue;
                     if (action == PackAction::ImagesInstall && !pack_text::PrimaryEnabled(vm.settings_pack_images_available,

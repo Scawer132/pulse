@@ -95,6 +95,7 @@ void IndexClient::Stop() {
 // every 30 s. Interactive users have SERVICE_START (InstallService); with an
 // older service DACL this is denied and Pulse keeps waiting as before.
 void IndexClient::StartStoppedService() {
+    if (!kDrivesIndexService) return;
     const ULONGLONG now = GetTickCount64();
     if (service_start_tick_ && now - service_start_tick_ < 30000) return;
     SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
@@ -117,6 +118,12 @@ void IndexClient::StartStoppedService() {
 }
 
 bool IndexClient::SetServiceSearch(bool enabled, bool purge_index, DWORD* error) {
+    if (!kDrivesIndexService) {
+        // The service belongs to the installed copy; this build never records a
+        // switch in it, so it keeps its owner's setting.
+        if (error) *error = ERROR_NOT_SUPPORTED;
+        return false;
+    }
     DWORD failure = NO_ERROR;
     bool ok = false;
     SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
@@ -202,14 +209,18 @@ void IndexClient::PurgeIndexFolder(const std::wstring& root) {
 
 bool IndexClient::SpawnHelper() {
     if (pipe_name_ != kPipeName) return false;
-    if (ServiceInstalled()) {
-        StartStoppedService();
-        {
-            std::lock_guard<std::mutex> lock(mu_);
-            status_ = L"正在等待索引服务…";
+    // Installed copies run the machine-wide service; a local-profile build has
+    // its own helper and never starts that service.
+    if constexpr (kDrivesIndexService) {
+        if (ServiceInstalled()) {
+            StartStoppedService();
+            {
+                std::lock_guard<std::mutex> lock(mu_);
+                status_ = L"正在等待索引服务…";
+            }
+            if (notify_ && status_msg_) PostMessageW(notify_, status_msg_, 0, 0);
+            return false;
         }
-        if (notify_ && status_msg_) PostMessageW(notify_, status_msg_, 0, 0);
-        return false;
     }
     const std::wstring exe = ExePath();
     if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) {
@@ -615,6 +626,7 @@ void IndexClient::CancelSession(uint64_t session_id) {
 }
 
 bool IndexClient::ServiceInstalled() const {
+    if (!kDrivesIndexService) return false;
     SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
     if (!scm) return false;
     SC_HANDLE svc = OpenServiceW(scm, kServiceName, SERVICE_QUERY_STATUS);
@@ -625,6 +637,7 @@ bool IndexClient::ServiceInstalled() const {
 }
 
 bool IndexClient::RequestInstallService() {
+    if (!kDrivesIndexService) return false;
     return InstallServiceElevated();
 }
 
@@ -684,6 +697,12 @@ bool IndexClient::RebuildElevated() {
 }
 
 bool IndexClient::InstallServiceElevated(DWORD* error) {
+    // Installing from a local-profile build would point the service at this
+    // build's Pulse.Index.exe, replacing the installed copy's host.
+    if (!kDrivesIndexService) {
+        if (error) *error = ERROR_NOT_SUPPORTED;
+        return false;
+    }
     return RunElevatedIndexCommand(ExePath(), L"--install", error);
 }
 

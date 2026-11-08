@@ -1367,6 +1367,9 @@ float MainRenderer::SettingsDestinationOffset(const WindowViewModel& vm, int set
     case I::DialogJumpAuto: target=l.dialog_jump_auto_row;break;
     case I::SearchPinyin: target=l.search_pinyin_row;break;
     case I::JumpHistory: target=l.jump_history_row;break;
+    case I::PreviewEnableTitle: target=l.preview_master_row;break;
+    case I::PreviewHoverSpaceTitle: target=l.preview_hover_row;break;
+    case I::PreviewDetailsTitle: target=l.preview_details_row;break;
     case I::ContentIndexManage: target=l.content_header;break;
     case I::IndexLocation: target=l.index_path;break;
     case I::LocalDrives: if(!l.index_volume_rows.empty()) target=l.index_volume_rows.front();break;

@@ -7,6 +7,7 @@
 #include "folder_alias.h"
 #include "app_wall_hint.h"
 #include "app_internal.h"
+#include "app_preview_policy.h"
 #include "app_network_page.h"
 #include "shortcut_page.h"
 #include "keymap.h"
@@ -837,6 +838,9 @@ void FillPaneSlots(AppState& s, ui::WindowViewModel& vm) {
             vm.settings_preview_trigger = s.appPrefs.preview_trigger;
             vm.settings_hover_delay_ms = s.appPrefs.hover_preview_delay_ms;
             vm.settings_hover_card_size = s.appPrefs.hover_card_size;
+            vm.settings_preview_enabled = s.appPrefs.preview_enabled;
+            vm.settings_preview_hover_space = s.appPrefs.preview_hover_space;
+            vm.settings_preview_details = s.appPrefs.preview_details_content;
             vm.settings_change_tracking = s.appPrefs.change_tracking_enabled;
             vm.settings_change_days = s.appPrefs.change_tracking_days;
             vm.settings_row_height = s.appPrefs.row_height;
@@ -2144,15 +2148,20 @@ static std::wstring ContextStatusHint(AppState& s, StatusHintAction& action) {
         return l10n::Get(I::HintMultiSel);
     }
     if (tab->net_readonly) return l10n::Get(I::HintReadonly2);
+    // 启用预览 › 悬停与空格预览 off: the hints must not teach a Space shortcut
+    // that does nothing.
+    const bool space_preview = app::HoverSpacePreviewOn(s.appPrefs);
     if (selected == 1) {
         const int index = tab->selected_index;
         const bool folder = tab->snapshot && index >= 0 &&
             static_cast<size_t>(index) < tab->snapshot->size() && (*tab->snapshot)[index].is_dir;
         if (kind == L"search") {
             action = StatusHintAction::OpenPath;
-            return l10n::Get(I::HintSearchResultSel);
+            return l10n::Get(space_preview ? I::HintSearchResultSel : I::HintSearchResultSelNoPreview);
         }
-        return l10n::Get(folder ? I::HintFolderSel : I::StatusHintSelected);
+        if (folder)
+            return l10n::Get(space_preview ? I::HintFolderSel : I::HintFolderSelNoPreview);
+        return l10n::Get(space_preview ? I::StatusHintSelected : I::StatusHintSelectedNoPreview);
     }
     if (!tab->filter_text.empty() && !s.filterSelectMode) {
         // Pane filter vs. search: say that subfolders are not included.
@@ -2177,6 +2186,9 @@ static std::wstring ContextStatusHint(AppState& s, StatusHintAction& action) {
         return l10n::Get(I::HintSplit);
     }
     action = StatusHintAction::Shortcuts;
+    if (!space_preview)
+        return l10n::Get(s.appPrefs.search_enabled ? I::StatusHintIdleNoPreview
+                                                   : I::StatusHintIdleNoPreviewNoSearch);
     return l10n::Get(s.appPrefs.search_enabled ? I::StatusHintIdle : I::StatusHintIdleNoSearch);
 }
 
@@ -2227,8 +2239,12 @@ int TeachTrigger(AppState& s) {
     if (kind == L"search") return tab->snapshot && tab->snapshot->size() > 0 ? 3 : -1;
     if (s.appPrefs.sidebar_collapsed) return 4;
     if (selected == 1 && tab->snapshot && tab->selected_index >= 0 &&
-        static_cast<size_t>(tab->selected_index) < tab->snapshot->size())
-        return (*tab->snapshot)[tab->selected_index].is_dir ? 0 : 5;
+        static_cast<size_t>(tab->selected_index) < tab->snapshot->size()) {
+        if ((*tab->snapshot)[tab->selected_index].is_dir) return 0;
+        // 启用预览 › 悬停与空格预览 off: the Space-preview bubble would teach a
+        // shortcut that does nothing.
+        return app::HoverSpacePreviewOn(s.appPrefs) ? 5 : -1;
+    }
     return -1;
 }
 
@@ -3100,10 +3116,14 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
     std::wstring sizeTarget; // folder that should be walking ("" = none)
     if (s.showDetailsPanel) {
         ui::DetailsPanelView& dv = vm.details;
+        // 启用预览 › 详情面板预览: the gate decides whether the well reads the
+        // file at all; the per-selection switch still hides the well itself.
+        const bool content_preview = app::DetailsPreviewContentOn(s.appPrefs);
         dv.scroll_y = s.detailsScroll;
-        dv.preview_only = s.detailsPreviewOnly;
+        dv.preview_icon_only = !content_preview;
+        dv.preview_only = s.detailsPreviewOnly && content_preview;
         dv.preview_enabled = s.detailsPreviewEnabled;
-        dv.preview_expansion = s.detailsPreviewExpansion;
+        dv.preview_expansion = content_preview ? s.detailsPreviewExpansion : 0.0f;
         dv.collapsed_mask = s.detailsCollapsedMask;
         app::Tab* tab = ActiveTab(s);
         const int selCount = tab ? tab->SelectedCount() : 0;

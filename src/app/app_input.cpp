@@ -23,6 +23,7 @@
 #include "window_overview_ui.h"
 #include "app_updates.h"
 #include "app_internal.h"
+#include "app_preview_policy.h"
 #include "global_search_controller.h"
 #include "selection_caps.h"
 #include "app_input.h"
@@ -3259,6 +3260,9 @@ LRESULT HandleLButtonDown(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARA
             return 0;
         }
         if (hit.region == ui::HitTestResult::DetailsPreviewToggle) {
+            // 启用预览 › 详情面板预览 off: the well holds an icon, so there is no
+            // content to expand to or fold away from.
+            if (!app::DetailsPreviewContentOn(s->appPrefs)) return 0;
             s->detailsPreviewOnly = !s->detailsPreviewOnly;
             s->detailsPreviewExpansionFrom = s->detailsPreviewExpansion;
             s->detailsPreviewFoldStart = GetTickCount64();

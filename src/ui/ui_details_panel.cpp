@@ -57,6 +57,24 @@ D2D1_RECT_F MainRenderer::DetailsPanelRect(float w, float h) const {
     const float bottom = h - status_height_ - margin_;
     return D2D1::RectF(w - margin_ - pw, top, w - margin_, bottom);
 }
+
+void MainRenderer::ReleasePreviewHosts(bool details, bool hover) {
+    if (details) {
+        // The handler host is an in-process overlay for IPreviewHandler; the
+        // decode cache owns Pulse.Preview.exe. Both stop here, and the identity
+        // is cleared so re-enabling asks for the selection again.
+        preview_handler_.Reset();
+        details_preview_identity_.clear();
+        details_viewport_ = {};
+        details_text_layout_.reset();
+        details_layout_text_.clear();
+        details_preview_ready_ = false;
+        details_preview_archive_ = false;
+        EndDetailsPreviewPan();
+        details_cache_.StopHosts();
+    }
+    if (hover) hover_cache_.StopHosts();
+}
 void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F& rect,
                                     const Theme& theme) {
     const D2D1_RECT_F panel = DetailsPanelRect(rect.right, rect.bottom);
@@ -96,9 +114,9 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         details_preview_ready_ = false;
         EndDetailsPreviewPan();
     }
-    if (!d.preview_enabled) {
-        // Collapsed well: drop pan/zoom state so nothing stale paints if the
-        // preview is switched back on for another file.
+    if (!d.preview_enabled || d.preview_icon_only) {
+        // No content in the well: drop pan/zoom state so nothing stale paints
+        // if previews are switched back on for another file.
         details_viewport_ = {};
         details_preview_ready_ = false;
     }
@@ -231,11 +249,13 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
             panel.right - pad, previewTop + previewH);
         const bool placeholderOnly = d.is_dir || d.multi_count > 1;
         // Off: neither the preview child process nor the handler host runs for
-        // this selection, which is the whole point of the switch.
+        // this selection, which is the whole point of the switch. 启用预览 ›
+        // 详情面板预览 off keeps the well and draws the file icon instead.
         const bool preview_on = d.preview_enabled;
-        const bool handlerPreview = preview_on && !vm.safe_mode && !placeholderOnly &&
+        const bool content_preview = preview_on && !d.preview_icon_only;
+        const bool handlerPreview = content_preview && !vm.safe_mode && !placeholderOnly &&
             !d.cloud_online && PreviewHandlerHost::CanHost(d.path);
-        if (!placeholderOnly) {
+        if (!placeholderOnly && !d.preview_icon_only) {
             MakeBrush(dc, theme.fill_hover, brFillInput_);
             FillRoundedRect(dc, brFillInput_.get(), previewRc.left, previewRc.top,
                             previewRc.right - previewRc.left,
@@ -254,7 +274,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         preview::Integrity integrity;
         PreviewDrawResult previewResult = PreviewDrawResult::Failed;
         uint32_t pageCount = 1, pageDelay = 0;  // paged document: count > 1, delay 0
-        if (preview_on && !d.is_dir && d.multi_count <= 1) {
+        if (content_preview && !d.is_dir && d.multi_count <= 1) {
             std::vector<PreviewProperty> ignored;
             details_cache_.Properties(d.path, d.attrs, d.view_generation,
                                         d.modified_value, d.size_value, ignored);
@@ -284,7 +304,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
                     false, nullptr, nullptr, &integrity);
         }
 
-        details_preview_ready_ = !placeholderOnly && !handlerPreview &&
+        details_preview_ready_ = content_preview && !placeholderOnly && !handlerPreview &&
             (previewResult == PreviewDrawResult::Bitmap || previewResult == PreviewDrawResult::Text ||
              previewResult == PreviewDrawResult::Hex || previewResult == PreviewDrawResult::Archive);
         if (!details_preview_ready_) EndDetailsPreviewPan();
@@ -400,7 +420,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
                  compositor_->SmallFormat(), theme.text_secondary);
         } else if (handlerPreview && handlerState == PreviewHandlerHost::State::Shown) {
             // System preview handler paints into the overlay HWND.
-        } else if (preview_on && d.cloud_online && d.multi_count <= 1 &&
+        } else if (content_preview && d.cloud_online && d.multi_count <= 1 &&
                    previewResult != PreviewDrawResult::Bitmap) {
             // 下载并预览 (C4b): what is missing, why Pulse waits, and the one
             // button that downloads; a progress bar takes its place meanwhile.
@@ -484,6 +504,25 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
                                        brText_.get());
                 }
             }
+        } else if (d.preview_icon_only && preview_on && !d.is_dir && d.multi_count <= 1) {
+            // 启用预览 › 详情面板预览 off: the well keeps the file-type icon the
+            // way a folder's preview does, and the file itself is never read.
+            const float icon = 58.0f * s;
+            const float icon_cx = (contentRc.left + contentRc.right) * 0.5f;
+            const float icon_top = contentRc.top +
+                ((contentRc.bottom - contentRc.top) - icon) * 0.5f;
+            const D2D1_RECT_F iconRc = D2D1::RectF(icon_cx - icon * 0.5f, icon_top,
+                icon_cx + icon * 0.5f, icon_top + icon);
+            const float hidden_alpha = HiddenEntryAlpha(d.attrs);
+            if (ID2D1Bitmap* bmp = icon_cache_.BitmapFor(d.path, d.name, d.is_dir, d.attrs, icon)) {
+                dc->DrawBitmap(bmp, &iconRc, hidden_alpha,
+                               D2D1_INTERPOLATION_MODE_HIGH_QUALITY_CUBIC);
+            } else {
+                DrawFileIcon(iconRc.left, iconRc.top, icon, theme, hidden_alpha);
+            }
+            if (d.is_link)
+                DrawLinkOverlay(iconRc.left, iconRc.top, icon, theme, hidden_alpha);
+            if (IsProtectedSystemEntry(d.attrs)) DrawProtectedBadge(dc, iconRc, scale_, theme);
         } else if (preview_on && previewResult != PreviewDrawResult::Bitmap) {
             const bool filePlaceholder = !d.is_dir && d.multi_count <= 1;
             std::wstring state;

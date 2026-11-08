@@ -77,6 +77,7 @@ constexpr SettingDestination destinations[]={
     {I::SettingsClearNetwork,12,0},{I::SettingsChangeTracking,12,0},
     {I::GlobalSearch,1,0},{I::GlobalSearchHotkey,1,0},{I::GlobalSearchDoubleCtrl,1,0},{I::GlobalSearchDoubleCtrlGap,1,0},{I::GlobalSearchApps,1,0},{I::DialogJumpBar,1,0},{I::DialogJumpAuto,1,0},{I::SearchPinyin,1,0},{I::JumpHistory,1,0},{I::ContentIndexManage,1,0},{I::IndexLocation,1,2},{I::LocalDrives,1,2},
     {I::Exclusions,1,2},{I::ServerFolders,1,2},{I::SettingsContextMenu,2,0},{I::SettingsDuplicates,4,0},{I::QuickPreview,5,4},{I::PreviewPacks,8,0},
+    {I::PreviewEnableTitle,5,0},{I::PreviewHoverSpaceTitle,5,0},{I::PreviewDetailsTitle,5,0},
     {I::SettingsAboutDiagnostics,3,0},{I::SettingsShowPerformance,3,0},{I::SettingsHints,3,0},{I::SettingsHintsReset,3,0},{I::SettingsTransfer,3,0},{I::SettingsAutoUpdate,3,0},
 };
 std::vector<ui::FluentMenuItem> FilterSettings(const std::wstring& query) {
@@ -400,6 +401,12 @@ bool HandleSettingsControl(AppState& s,const H& hit) {
         case ui::PackAction::HoverSizeMedium:
         case ui::PackAction::HoverSizeLarge:
             s.settings.HoverCardSize(hit.index-static_cast<int>(ui::PackAction::HoverSizeSmall));break;
+        case ui::PackAction::PreviewMaster:
+            s.settings.PreviewEnabled(!s.appPrefs.preview_enabled);break;
+        case ui::PackAction::PreviewHoverSpace:
+            s.settings.PreviewHoverSpace(!s.appPrefs.preview_hover_space);break;
+        case ui::PackAction::PreviewDetails:
+            s.settings.PreviewDetailsContent(!s.appPrefs.preview_details_content);break;
         case ui::PackAction::Browse: {
             ui::FolderPickerSpec spec;spec.mode=ui::PickerMode::File;
             spec.title=l10n::Get(l10n::StringId::ChooseFfmpegExe).c_str();

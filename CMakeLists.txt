@@ -17,6 +17,10 @@ endif()
 
 option(PULSE_WIN81_CANDIDATE "Require a Windows 8.1-capable release toolset" OFF)
 option(PULSE_RELEASE_SYMBOLS "Generate matching PDBs for signed release archives" OFF)
+# Keeps a local build out of the installed release's %LOCALAPPDATA%\Pulse
+# (app.json, session.json, places) and gives it a second single instance, so
+# both can run side by side. Local-only: never part of a shipped build.
+option(PULSE_LOCAL_PROFILE "Keep this build's state under %LOCALAPPDATA%\\Pulse-local" OFF)
 if(PULSE_WIN81_CANDIDATE AND MSVC_VERSION GREATER_EQUAL 1950)
     message(FATAL_ERROR "Windows 8.1 candidate builds require VS 2022 v143, not VS 2026")
 endif()
@@ -543,6 +547,9 @@ endif()
 list(APPEND PULSE_APP_SOURCES src/index/network_agent_client.cpp)
 if(PULSE_APP_SOURCES)
     add_executable(pulse WIN32 ${PULSE_APP_SOURCES})
+    if(PULSE_LOCAL_PROFILE)
+        target_compile_definitions(pulse PRIVATE PULSE_LOCAL_PROFILE=1)
+    endif()
     if(PULSE_WITH_SELFTEST)
         target_compile_definitions(pulse PRIVATE PULSE_WITH_SELFTEST=1)
         target_sources(pulse PRIVATE src/bench/startup_rollback_test.cpp)
@@ -673,6 +680,11 @@ add_executable(pulse_index WIN32
 target_sources(pulse_index PRIVATE src/index/index_host.rc)
 target_link_options(pulse_index PRIVATE /MANIFEST:NO)
 set_target_properties(pulse_index PROPERTIES OUTPUT_NAME "Pulse.Index")
+if(PULSE_LOCAL_PROFILE)
+    # The helper this build spawns keeps its index (and network index) under the
+    # local profile folder instead of the installed copy's per-user index.
+    target_compile_definitions(pulse_index PRIVATE PULSE_LOCAL_PROFILE=1)
+endif()
 target_link_libraries(pulse_index PRIVATE advapi32 shlwapi ole32 shell32 netapi32 mpr bcrypt pulse_localization
     pulse_crash_reporter pulse_text)
 pulse_add_version_resource(pulse_index "Pulse index host" "Pulse.Index" "Pulse.Index.exe")

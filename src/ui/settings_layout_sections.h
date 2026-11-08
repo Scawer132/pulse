@@ -406,7 +406,13 @@ float LayoutSettingsContent(SettingsLayout& l, const WindowViewModel& vm, float 
 namespace pack_text {
 inline const wchar_t* Title() { return l10n::Get(l10n::StringId::QuickPreview).c_str(); }
 inline const wchar_t* Intro() { return l10n::Get(l10n::StringId::HoverOverOrPressSpaceToPreviewFilesChooseHowExploreFormatSup).c_str(); }
-inline const wchar_t* TriggerSection() { return l10n::Get(l10n::StringId::PreviewTrigger).c_str(); }
+// 启用预览 and its two children.
+inline const wchar_t* MasterTitle() { return l10n::Get(l10n::StringId::PreviewEnableTitle).c_str(); }
+inline const wchar_t* MasterDesc() { return l10n::Get(l10n::StringId::PreviewEnableDesc).c_str(); }
+inline const wchar_t* HoverChildTitle() { return l10n::Get(l10n::StringId::PreviewHoverSpaceTitle).c_str(); }
+inline const wchar_t* HoverChildDesc() { return l10n::Get(l10n::StringId::PreviewHoverSpaceDesc).c_str(); }
+inline const wchar_t* DetailsChildTitle() { return l10n::Get(l10n::StringId::PreviewDetailsTitle).c_str(); }
+inline const wchar_t* DetailsChildDesc() { return l10n::Get(l10n::StringId::PreviewDetailsDesc).c_str(); }
 inline const wchar_t* TriggerTitle() { return l10n::Get(l10n::StringId::OpenPreviews).c_str(); }
 inline const wchar_t* TriggerDesc(int trigger) {
     return trigger == 1
@@ -697,7 +703,9 @@ float LayoutSettingsPacks(SettingsLayout& l, const WindowViewModel& vm, float sc
     // card leading to the 增强包 page (8), which holds the packs themselves.
     if (vm.settings_page != 8) {
     y += caption_h(pack_text::Intro(), right - left) + 10*scale;
-    // 预览方式: one card per choice row, segments at the right (below when narrow).
+    // 启用预览: the master switch with its two children on a tinted band (the
+    // page-9 idiom). The children keep their own value while the master is off,
+    // so they stay laid out there and the page draws them faded.
     {
         const bool narrow = right - left < 560*scale;
         auto segments = [&](D2D1_RECT_F r, D2D1_RECT_F* output, int count, float width) {
@@ -708,17 +716,33 @@ float LayoutSettingsPacks(SettingsLayout& l, const WindowViewModel& vm, float sc
                 output[i] = D2D1::RectF(c.left + w*static_cast<float>(i), c.top, c.left + w*static_cast<float>(i + 1), c.bottom);
         };
         const float h = narrow ? 112.0f : 64.0f + 8.0f*(font - 1.0f)*4.0f;
-        l.trigger_section = row(28*font);
-        l.trigger_row = row(h);
+        // A switch row only holds a title and a caption; narrow pages at a large
+        // font wrap that caption to two lines.
+        const float switch_h = narrow ? 88.0f : 64.0f;
+        const float child_inset = 28.0f*scale;
+        float band_top = -1.0f;
+        auto child_row = [&](float height) {
+            if (band_top < 0.0f) {
+                y += 8*scale;
+                band_top = y;
+            }
+            const auto r = D2D1::RectF(left + child_inset, y, right, y + height*scale);
+            l.dividers.push_back(D2D1::RectF(r.left + 16*scale, r.top, r.right - 16*scale, r.top));
+            y = r.bottom;
+            return r;
+        };
+        l.preview_master_row = row(switch_h);
+        l.preview_hover_row = child_row(switch_h);
+        l.trigger_row = child_row(h);
         segments(l.trigger_row, l.trigger_choice, 2, 220*font);
         if (vm.settings_preview_trigger == 0) {
-            y += 8*scale;
-            l.hover_delay_row = row(h);
+            l.hover_delay_row = child_row(h);
             segments(l.hover_delay_row, l.hover_delay_choice, 3, 240*font);
-            y += 8*scale;
-            l.hover_size_row = row(h);
+            l.hover_size_row = child_row(h);
             segments(l.hover_size_row, l.hover_size_choice, 3, 240*font);
         }
+        l.preview_details_row = child_row(switch_h);
+        l.child_bands.push_back(D2D1::RectF(left, band_top, right, y));
         y += 24*scale;
     }
     l.preview_section = row(28*font);

@@ -4422,5 +4422,16 @@
 #define IDS_SETTINGS_FOLDER_SIZES                                                        5630
 #define IDS_SETTINGS_FOLDER_SIZES_DESC                                                   5631
 #define IDS_DETAILS_CALC_SIZE                                                            5632
+#define IDS_PREVIEW_ENABLE_TITLE                                                         5633
+#define IDS_PREVIEW_ENABLE_DESC                                                          5634
+#define IDS_PREVIEW_HOVER_SPACE_TITLE                                                    5635
+#define IDS_PREVIEW_HOVER_SPACE_DESC                                                     5636
+#define IDS_PREVIEW_DETAILS_TITLE                                                        5637
+#define IDS_PREVIEW_DETAILS_DESC                                                         5638
+#define IDS_STATUS_HINT_IDLE_NO_PREVIEW                                                  5639
+#define IDS_STATUS_HINT_IDLE_NO_PREVIEW_NO_SEARCH                                        5640
+#define IDS_STATUS_HINT_SELECTED_NO_PREVIEW                                              5641
+#define IDS_HINT_FOLDER_SEL_NO_PREVIEW                                                   5642
+#define IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW                                            5643
 
 #endif  // PULSE_STRING_IDS_H

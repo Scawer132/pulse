@@ -55,6 +55,7 @@
 #include "app_model.h"
 #include "app_worker.h"
 #include "snapshot_patch.h"
+#include "local_profile_seed.h"
 #include "session.h"
 #include "session_save.h"
 #include "window_placement.h"
@@ -3992,6 +3993,20 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
     }
 #endif
 
+    // A local-profile build has its own data folder: the first start imports the
+    // installed copy's configuration. --sync-release-config re-imports it and
+    // exits; run it while Pulse is closed, because a running instance writes its
+    // own files when it exits.
+    bool sync_release_config = false;
+    for (int i = 1; i < __argc; ++i)
+        if (wcscmp(__wargv[i], L"--sync-release-config") == 0) sync_release_config = true;
+    if (sync_release_config) {
+        const bool copied = app::SeedLocalProfileFromRelease(true);
+        OleUninitialize();
+        return copied ? 0 : 1;
+    }
+    if (!state.isolatedTest && !SkipSingletonFromArgv()) app::SeedLocalProfileFromRelease(false);
+
     // Load previous session before parsing overrides.
     app::SessionSnapshot session;
     if ((!state.isolatedTest || state.isolatedTestPersist) && app::LoadSession(session)) {
@@ -4604,6 +4619,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
         if (state.isolatedTest && GetEnvironmentVariableW(L"PULSE_TEST_QUICKLOOK_SETTINGS", quicklook_settings, ARRAYSIZE(quicklook_settings))) {
             extern int RunQuickLookSettingsTest(AppState&, const wchar_t*);
             const int result = RunQuickLookSettingsTest(state, quicklook_settings);
+            DestroyWindow(hwnd); OleUninitialize(); return result;
+        }
+        wchar_t preview_switch[32768]{};
+        if (state.isolatedTest && GetEnvironmentVariableW(L"PULSE_TEST_PREVIEW_SWITCH", preview_switch, ARRAYSIZE(preview_switch))) {
+            extern int RunPreviewSwitchProbe(AppState&, const wchar_t*);
+            const int result = RunPreviewSwitchProbe(state, preview_switch);
             DestroyWindow(hwnd); OleUninitialize(); return result;
         }
         if (state.isolatedTest && GetEnvironmentVariableW(L"PULSE_TEST_SETTINGS_INTERACTIONS",settings_interactions,ARRAYSIZE(settings_interactions))) {

@@ -41,6 +41,8 @@ enum class SettingsEffect : uint32_t {
     UiFontSize = 1u << 13,
     MenuMaterial = 1u << 14,
     SearchSwitch = 1u << 15,
+    // 启用预览 and its two children: hosts are released and open previews close.
+    PreviewPolicy = 1u << 16,
 };
 
 constexpr SettingsEffect operator|(SettingsEffect left, SettingsEffect right) noexcept {
@@ -272,6 +274,11 @@ public:
     void PreviewTrigger(int index);    // 0 hover card, 1 Space only
     void HoverPreviewDelay(int index); // 0.3 / 0.5 / 0.8 s
     void HoverCardSize(int index);     // 0 small, 1 medium, 2 large
+    // 快速预览 › 启用预览 (the gate) and its children 悬停与空格预览 /
+    // 详情面板预览文件内容. The children keep their value while the gate is off.
+    void PreviewEnabled(bool on);
+    void PreviewHoverSpace(bool on);
+    void PreviewDetailsContent(bool on);
     // 0 picks the default location's folder, 1 resets it to This PC.
     void HomeFolder(int action);
     void TextRendering(int index);
