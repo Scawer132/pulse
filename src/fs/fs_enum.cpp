@@ -158,14 +158,30 @@ std::wstring NormalizePath(std::wstring path) {
         SetLastError(ERROR_INVALID_NAME);
         return {};
     }
-    wchar_t full[32768];
-    const DWORD n = GetFullPathNameW(path.c_str(), static_cast<DWORD>(_countof(full)), full, nullptr);
-    if (n == 0) return {};
-    if (n >= _countof(full)) {
-        SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        return {};
+    // A 64 KB stack buffer here is enough to overflow a message handler that is
+    // already nested: the details panel normalizes several paths per frame.
+    // Keep the common case small and grow onto the heap for long paths only.
+    wchar_t full[MAX_PATH * 2];
+    const DWORD copied = GetFullPathNameW(path.c_str(), static_cast<DWORD>(_countof(full)),
+                                          full, nullptr);
+    if (copied == 0) return {};
+    std::wstring resolved;
+    if (copied >= _countof(full)) {
+        // Too small: the call reports the size it needs, terminator included.
+        std::wstring buffer(copied, L'\0');
+        const DWORD written = GetFullPathNameW(path.c_str(),
+                                               static_cast<DWORD>(buffer.size()),
+                                               buffer.data(), nullptr);
+        if (written == 0 || written >= buffer.size()) {
+            SetLastError(ERROR_FILENAME_EXCED_RANGE);
+            return {};
+        }
+        buffer.resize(written);
+        resolved = std::move(buffer);
+    } else {
+        resolved.assign(full, copied);
     }
-    path.assign(full, n);
+    path = std::move(resolved);
     // Remove trailing backslash except for drive root.
     if (path.size() > 1 && path.back() == L'\\' && path[path.size() - 2] != L':')
         path.pop_back();
