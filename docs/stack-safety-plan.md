@@ -3,7 +3,7 @@
 > 关联：2026-11-08 栈溢出崩溃。主线程栈 1 MB，崩溃栈上 `WndProcImpl` /
 > `WindowOverviewMessage` 成对重复 47 层，约 26 KB/层（`HandleMouseMove` ~12 KB +
 > `HitTest` ~17 KB）。
-> 状态：**阶段 1、2 已实现**（分支 `local/wndproc-guard`）；阶段 3 未开始。
+> 状态：**阶段 1、2 已实现**；阶段 3 在采集数据（静态盘点见 §5.1）。
 
 ## 1. 结论
 
@@ -117,18 +117,63 @@
 - `--all` 审计出当前 40 处（含 `std::array` 和 8–16 KB 的），不批量重构：绝大多数在
   index/preview/测试流程，不在 UI 线程的深栈路径上。
 
-## 5. 阶段 3：同步派发治理（未开始，数据驱动）
+## 5. 阶段 3：同步派发治理（进行中：先采集）
 
-不预先审计全部 285 处。顺序：
+### 5.1 静态盘点（2026-11-08）
 
-1. 从诊断日志和崩溃 JSON 读出真实的嵌套链（category 3 的 msg 序列 + 峰值消息）。
-2. 只改被证实的链。当前候选：`window_overview_ui.cpp` 的 `Busy()` /
-   `Drop()` / `GoTo()`（`SetForegroundWindow`、`ShowWindow`、`DestroyWindow` 都在
-   `WM_LBUTTONUP` 处理里）、`TrackPopupMenu`、OLE 拖放。
-3. 规则：消息处理里只记录状态和意图，窗口状态变更交给 `PostMessage` / 定时器在
-   顶层推进。
-4. 验收：同一复现路径下峰值 ≤ 8；`pulse_window_overview_test` 通过；手工回归窗口
-   总览的拖拽合并/新建窗口。
+口径：`src/app` + `src/ui` 生产代码（排除 bench、test、probe、selftest），共 558 处同步
+调用点。按"能不能把消息送回本窗口"分四档。
+
+**档 1：模态循环**——循环里会派发任何消息，最可能形成链：
+
+| 位置 | 调用 | 入口 |
+|---|---|---|
+| `app_commands.cpp:890` | `menu->TrackPopup` | 右键菜单 |
+| `tray_controller.cpp:112` | `TrackPopupMenu` | 托盘图标菜单 |
+| `ui/drag_drop.cpp:696` | `DoDragDrop` | 拖动越过阈值（WM_MOUSEMOVE） |
+| `app_main.cpp:1305` | `MessageBoxW` | 仅 D3D 初始化失败，冷路径，排除 |
+
+**档 2：消息处理里同步改窗口状态**——直接重入 `WndProcImpl`，每处 +1 层：
+
+| 位置 | 调用 | 入口 |
+|---|---|---|
+| `window_overview_ui.cpp:152` | `SetForegroundWindow` | 窗口总览 Drop（WM_LBUTTONUP） |
+| `window_overview_ui.cpp:188/192` | `ShowWindow` | 同上 |
+| `window_overview_ui.cpp:190` | `DestroyWindow(gone)` | 同上，会带出另一个窗口的 WM_DESTROY |
+| `window_overview_ui.cpp:135` | `RevealWindow` → ShowWindow + SetForegroundWindow | 总览 GoTo |
+| `app_input.cpp:1888` | `SendMessage(WM_NCLBUTTONDOWN, HTCAPTION)` | 标题栏拖动，进入系统移动循环 |
+| `tab_detach.cpp:663/667` | `SendMessage(WM_SYSCOMMAND / WM_NCLBUTTONDOWN)` | 标签拖出 |
+| `window_identity_ui.cpp:154` | `SendMessage(WM_NCLBUTTONDOWN)` | 窗口身份标题拖动 |
+| `app_input.cpp:4256/4284` | `SendMessage(WM_SYSCOMMAND)` | 双击标题栏最大化 |
+| `window_helpers.cpp:402` | `SendMessage(WM_NCACTIVATE)` | 强制激活重绘 |
+| `app_commands.cpp:888/1013` | `UpdateWindow` | 托盘 / 右键菜单弹出前 |
+| `app_commands.cpp:5861` | `RedrawWindow(RDW_UPDATENOW)` | 主题切换 |
+| `app_hosted_edit.cpp:938/960` | `SendMessage(s.hwnd, …)` | 子编辑框把按键转发回主窗口，**真正嵌套 WndProcImpl** |
+| `address_search.cpp:249` | `SendMessage(s.hwnd, WM_KEYDOWN)` | 地址栏 |
+| `fluent_menu.cpp:2072` | `SendMessage(hwnd_, WM_MOUSEWHEEL)` | 菜单窗口 |
+
+**档 3：子控件 SendMessage**——约 90 处 `EM_*` / `WM_SETFONT` / `WM_SETREDRAW`，走子控件
+自己的 wndproc，不增加本窗口的栈深。
+
+**档 4：跨线程 / 跨进程 SendMessage**——其余约 150 处，会阻塞但不重入本窗口。
+
+结论：能形成"本窗口 → 本窗口"环的只有档 1 + 档 2，共约 17 个点；阶段 3 盯这 17 个，
+不是 285 个。
+
+### 5.2 采集
+
+- 护栏的峰值上报阈值从 8 降到 **3**：正常路径实测峰值就是 2，8 永远不会触发；3 抓到的
+  正是"菜单 / 拖动 / 强制重绘多出来的那一层"。
+- 周期：日常使用 3–7 天，看 `%LOCALAPPDATA%\Pulse\Diagnostics\Runtime\app-*.jsonl`：
+  - `wndproc_depth_peak`（外层 msg + 峰值）——按 msg 归类就是候选链的入口；
+  - `wndproc_depth_dropped`——出现即说明 24 层被逼近过；
+  - 崩溃 JSON 里 category 3 的 msg 序列——真出事时的完整链。
+- 判据：按命中频率改档 1 / 档 2 的点，没被数据命中的不改。
+
+### 5.3 预期
+
+如果一周内峰值始终 ≤ 3，说明真实使用里不存在深链，阶段 3 可以从"改代码"降级为
+"保留护栏 + 定期看数据"。
 
 ## 6. 不做的
 
