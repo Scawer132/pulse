@@ -374,6 +374,9 @@ void MainRenderer::DrawToolbar(const WindowViewModel& vm, const D2D1_RECT_F& rec
     const bool compact = rect.right-left < 600*scale_;
     const auto layout = ToolbarLayoutAt(rect.right,NewButtonWidthPx(compact),vm.pane.filter_expand);
     const bool searchOverlay=vm.address_searching && rect.right-left<480*scale_;
+    // Last frame's plated controls by hit key: a hover change between two of
+    // them repaints both and the plates' paths only (ToolbarHoverDamage).
+    drawn_toolbar_controls_.clear();
     ToolbarMotion& tm=ToolbarMotionFor(this);
     if (motion_now_-tm.animations_checked > 2000 || !tm.animations_checked) {
         // The Windows animation switch, re-read every couple of seconds.
@@ -437,6 +440,7 @@ void MainRenderer::DrawToolbar(const WindowViewModel& vm, const D2D1_RECT_F& rec
         for (int i=0;i<4;++i) {
             const auto r=layout.navigation[i];
             if (r.right<=r.left) continue;
+            drawn_toolbar_controls_[PlateKey(nav_hits[i],0)] = r;
             const bool enabled=i==0 ? vm.can_go_back : i==1 ? vm.can_go_forward : true;
             fluent::ButtonSpec button;
             button.bounds = r; button.glyph = nav_glyphs[i];
@@ -545,6 +549,7 @@ void MainRenderer::DrawToolbar(const WindowViewModel& vm, const D2D1_RECT_F& rec
             }
             for (size_t i = 0; i < placed.size(); ++i) {
                 const auto& seg = placed[i];
+                drawn_toolbar_controls_[PlateKey(HitTestResult::BreadcrumbSegment, static_cast<int>(i))] = seg.rc;
                 struct CrumbEnter {
                     ID2D1DeviceContext* dc;
                     D2D1_MATRIX_3X2_F saved{};
@@ -671,6 +676,16 @@ void MainRenderer::DrawToolbar(const WindowViewModel& vm, const D2D1_RECT_F& rec
             if (!hot && hovered && r.right > r.left) { hot=&r; hot_key=key; hot_radius=radius; }
         };
         const float rc=theme.radius_control*scale_;
+        // The plate's targets as drawn (hit keys match ui_hit_test.cpp).
+        drawn_toolbar_controls_[PlateKey(HitTestResult::ToolbarMore,0)] = layout.overflow;
+        for (size_t i=0;i<layout.pins.size();++i)
+            if (layout.pins[i].right>layout.pins[i].left)
+                drawn_toolbar_controls_[PlateKey(HitTestResult::ToolbarPin,static_cast<int>(i))] = layout.pins[i];
+        drawn_toolbar_controls_[PlateKey(HitTestResult::ToolbarSort,0)] = layout.sort;
+        if (!filter_field)
+            drawn_toolbar_controls_[PlateKey(HitTestResult::FilterBox,0)] = layout.filter;
+        if (!group_chip)
+            drawn_toolbar_controls_[PlateKey(HitTestResult::ToolbarGroup,0)] = layout.group;
         consider(layout.overflow,IsHovered(vm,HitTestResult::ToolbarMore),PlateKey(HitTestResult::ToolbarMore,0),rc);
         const size_t from=vm.toolbar_pins.size();
         for (size_t i=0;i<layout.pins.size();++i) {
@@ -1057,6 +1072,38 @@ FavoritesBarLayout MainRenderer::FavoritesBarLayoutAt(const WindowViewModel& vm,
         widths.push_back(tw);
     }
     return MakeFavoritesBarLayout(band,scale_,widths,icon_only,separators,true);
+}
+
+bool MainRenderer::ToolbarHoverDamage(int old_region, int old_index, int new_region, int new_index,
+                                      D2D1_RECT_F* out) const {
+    if (!out) return false;
+    D2D1_RECT_F r{};
+    bool any = false;
+    const auto unite = [&](const D2D1_RECT_F& a) {
+        if (a.right <= a.left || a.bottom <= a.top) return;
+        if (!any) {
+            r = a;
+            any = true;
+            return;
+        }
+        r.left = (std::min)(r.left, a.left);
+        r.top = (std::min)(r.top, a.top);
+        r.right = (std::max)(r.right, a.right);
+        r.bottom = (std::max)(r.bottom, a.bottom);
+    };
+    for (const auto& key : {PlateKey(static_cast<HitTestResult::Region>(old_region), old_index),
+                            PlateKey(static_cast<HitTestResult::Region>(new_region), new_index)}) {
+        const auto it = drawn_toolbar_controls_.find(key);
+        if (it == drawn_toolbar_controls_.end()) return false;
+        unite(it->second);
+    }
+    // A plate mid-glide sits between the two controls: its published path is
+    // part of what the frame repaints.
+    if (toolbar_plate_moving_) unite(toolbar_plate_span_);
+    if (!any) return false;
+    const float margin = 4.0f * scale_;
+    *out = D2D1::RectF(r.left - margin, r.top - margin, r.right + margin, r.bottom + margin);
+    return true;
 }
 
 void MainRenderer::DrawFavoritesBar(const WindowViewModel& vm, const D2D1_RECT_F& rect, const Theme& theme) {

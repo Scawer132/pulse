@@ -2963,6 +2963,17 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 return false;
             }
         };
+        const auto toolbar_region = [](int region) {
+            using R = ui::HitTestResult;
+            switch (static_cast<R::Region>(region)) {
+            case R::NavBack: case R::NavForward: case R::NavUp: case R::NavRefresh:
+            case R::BreadcrumbSegment: case R::ToolbarMore: case R::ToolbarPin:
+            case R::ToolbarSort: case R::FilterBox: case R::ToolbarGroup:
+                return true;
+            default:
+                return false;
+            }
+        };
         const int prev_row = s->hoverRow, prev_pane = s->hoverPaneIndex, prev_region = s->hoverRegion;
         const int prev_control = s->hoverControlIndex;
         const int prev_crumb = s->breadcrumbHover;
@@ -2976,6 +2987,11 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             else if (sidebar_region(prev_region) && sidebar_region(s->hoverRegion) &&
                      prev_crumb == s->breadcrumbHover && prev_sidebar_hot == s->sidebarScrollbarHot &&
                      s->renderer.SidebarHoverDamage(prev_control, s->hoverControlIndex, &rows))
+                app::InvalidatePartial(hwnd, app::DamagePixels(rows));
+            else if (toolbar_region(prev_region) && toolbar_region(s->hoverRegion) &&
+                     prev_crumb == s->breadcrumbHover && prev_sidebar_hot == s->sidebarScrollbarHot &&
+                     s->renderer.ToolbarHoverDamage(prev_region, prev_control,
+                                                    s->hoverRegion, s->hoverControlIndex, &rows))
                 app::InvalidatePartial(hwnd, app::DamagePixels(rows));
             else
                 InvalidateRect(hwnd, nullptr, FALSE);

@@ -391,6 +391,10 @@ public:
     bool HoverRowDamage(int pane_index, int old_source, int new_source, D2D1_RECT_F* out) const;
     // The same for a hover change between two sidebar rows.
     bool SidebarHoverDamage(int old_run, int new_run, D2D1_RECT_F* out) const;
+    // The same for a hover change between two plated toolbar controls (the
+    // nav buttons, breadcrumb segments and the command row's plate targets).
+    bool ToolbarHoverDamage(int old_region, int old_index, int new_region, int new_index,
+                            D2D1_RECT_F* out) const;
     // A frame while only hover plates glide: their paths. False otherwise.
     bool HoverMotionDamage(D2D1_RECT_F* out) const;
     // The frame about to render redraws only `damage` (client px; null: all).
@@ -1188,6 +1192,8 @@ private:
     std::array<std::vector<std::pair<int, D2D1_RECT_F>>, 8> drawn_rows_{};  // source, cell
     // Where the sidebar's hoverable rows were drawn last frame (run, row).
     std::unordered_map<int, D2D1_RECT_F> drawn_sidebar_slots_;
+    // The toolbar's plated controls as drawn last frame (PlateKey, rect).
+    std::unordered_map<int64_t, D2D1_RECT_F> drawn_toolbar_controls_;
     // Panes whose last frame drew tree guides: a hover moves the highlighted
     // line, which spans rows outside the two that changed.
     std::array<bool, 8> tree_guides_drawn_{};
