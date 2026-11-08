@@ -4411,6 +4411,10 @@ enum class StringId : UINT {
     OpAuthTitleDelete = IDS_OP_AUTH_TITLE_DELETE,
     OpAuthNotGrantedShort = IDS_OP_AUTH_NOT_GRANTED_SHORT,
     OpAuthorizationOnce = IDS_OP_AUTHORIZATION_ONCE,
+    DetailsSysVersion = IDS_DETAILS_SYS_VERSION,
+    DetailsComputerName = IDS_DETAILS_COMPUTER_NAME,
+    DetailsProcessor = IDS_DETAILS_PROCESSOR,
+    DetailsMemory = IDS_DETAILS_MEMORY,
 };
 
 bool IsLanguageId(std::wstring_view id) noexcept;

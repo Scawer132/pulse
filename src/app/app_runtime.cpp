@@ -27,6 +27,7 @@
 #include "folder_sizes_ui.h"
 #include "update_status.h"
 #include "about_info.h"
+#include "details_info.h"
 #include "../ui/lumatext_renderer.h"
 #include "../ui/link_type_text.h"
 #include "../ui/fluent_menu.h"
@@ -3226,6 +3227,27 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
                 dv.preset_tags.push_back(std::move(chip));
             }
             if (dv.is_dir) sizeTarget = dv.path;
+        } else if (!dv.has_selection && selCount == 0 && tab) {
+            // Nothing selected: describe the folder itself, or 此电脑 as the
+            // machine card. No walk starts here - the size comes from the
+            // cache, so navigating never traverses anything.
+            const std::wstring& cwd = tab->current_path;
+            if (cwd.empty() || app::DetailsInfoAppliesTo(cwd)) {
+                app::DetailsInfoInput input;
+                input.this_pc = cwd.empty();
+                input.folder_path = cwd;
+                input.entries = tab->EntryCount();
+                if (!input.this_pc) {
+                    const auto value = s.folderSizes.Get(cwd);
+                    if (value.has_value) input.size_bytes = value.bytes;
+                }
+                app::FillDetailsInfo(input, dv);
+                if (probe_details && s.detailsSelPath != cwd) {
+                    s.detailsSelPath = cwd;
+                    s.detailsScroll = 0.0f;
+                    dv.scroll_y = 0.0f;
+                }
+            }
         }
     }
     std::wstring requestedSizePath;

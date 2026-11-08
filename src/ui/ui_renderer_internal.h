@@ -1807,8 +1807,9 @@ void ClearTextWidthCache() {
                 ? MeasureLayoutText(compositor, dwrite, small_fmt, label) : 90.0f * s;
             out.cloud_download = DetailsCloudButtonRect(out.preview, s, label_w);
         }
-        // Preview off: no fold bar and no well to hit up there.
-        if (d.preview_enabled) {
+        // Preview off: no fold bar and no well to hit up there. A context card
+        // has no fold bar either: its well only shows an icon.
+        if (d.preview_enabled && !d.context) {
             out.preview_toggle = D2D1::RectF(x, previewBottom, panel.right - pad,
                 std::min(panel.bottom, previewBottom + 28.0f * s));
         }
@@ -1817,7 +1818,7 @@ void ClearTextWidthCache() {
             return;
         }
         float y = previewBottom + 32.0f * s - d.scroll_y * s;
-        if (d.multi_count <= 1) {
+        if (d.multi_count <= 1 && !d.context) {
             // Name row: star then rename pencil on the right edge.
             out.rename = D2D1::RectF(panel.right - pad - 22.0f * s, y,
                                      panel.right - pad, y + 22.0f * s);
@@ -1829,6 +1830,12 @@ void ClearTextWidthCache() {
                                              out.star.left - 4.0f * s, y + 22.0f * s);
         }
         y += 22.0f * s + 16.0f * s + 8.0f * s; // name + type + gap
+        if (d.context) {
+            // A card is its facts: no button row, no sections.
+            y += static_cast<float>(d.context_rows.size()) * 18.0f * s + 8.0f * s;
+            out.content_height_dip = (y + d.scroll_y * s - panel.top) / s;
+            return;
+        }
         if (d.multi_count <= 1) {
             // Button row: 打开 / 在新标签打开 / 复制路径 / 更多 (icon over label).
             // Buttons size to their measured label width; leftover space is

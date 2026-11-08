@@ -229,7 +229,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
     {
         const D2D1_RECT_F previewRc = D2D1::RectF(panel.left + pad, previewTop,
             panel.right - pad, previewTop + previewH);
-        const bool placeholderOnly = d.is_dir || d.multi_count > 1;
+        const bool placeholderOnly = d.is_dir || d.multi_count > 1 || d.context;
         // Off: neither the preview child process nor the handler host runs for
         // this selection, which is the whole point of the switch.
         const bool preview_on = d.preview_enabled;
@@ -254,7 +254,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         preview::Integrity integrity;
         PreviewDrawResult previewResult = PreviewDrawResult::Failed;
         uint32_t pageCount = 1, pageDelay = 0;  // paged document: count > 1, delay 0
-        if (preview_on && !d.is_dir && d.multi_count <= 1) {
+        if (preview_on && !placeholderOnly && d.multi_count <= 1) {
             std::vector<PreviewProperty> ignored;
             details_cache_.Properties(d.path, d.attrs, d.view_generation,
                                         d.modified_value, d.size_value, ignored);
@@ -484,6 +484,20 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
                                        brText_.get());
                 }
             }
+        } else if (d.pc_card && preview_on && previewH > 1.0f) {
+            // 此电脑: the card leads with the OS logo instead of a file icon.
+            const float logo = 96.0f * s;
+            const float logo_cx = (contentRc.left + contentRc.right) * 0.5f;
+            const float logo_top = contentRc.top +
+                ((contentRc.bottom - contentRc.top) - logo) * 0.5f;
+            const D2D1_RECT_F logoRc = D2D1::RectF(logo_cx - logo * 0.5f, logo_top,
+                logo_cx + logo * 0.5f, logo_top + logo);
+            if (!DrawFluentSvg(IDR_WINDOWS_OS_SVG, logoRc, 1.0f, nullptr, true)) {
+                // Missing resource or no D2D SVG support: keep a recognizable glyph.
+                if (!DrawFluentSvg(IDR_FLUENT_PC_SVG, logoRc, 1.0f, nullptr, true))
+                    DrawIconText(logoRc.left, logoRc.top, logo, logo, L"\xE977", L"PC",
+                                 theme.text_secondary, 1.0f);
+            }
         } else if (preview_on && previewResult != PreviewDrawResult::Bitmap) {
             const bool filePlaceholder = !d.is_dir && d.multi_count <= 1;
             std::wstring state;
@@ -613,7 +627,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
 
     // Name + star + rename pencil + subtitle.
     {
-        if (d.multi_count <= 1) {
+        if (d.multi_count <= 1 && !d.context) {
             const bool starHot = IsHovered(vm, HitTestResult::DetailsStar);
             const bool renHot = IsHovered(vm, HitTestResult::DetailsRename);
             if (starHot || d.starred) {
@@ -649,7 +663,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
                          L"\xE8AC", L"ren", theme.text_secondary, 0.72f);
         }
         // 别名: the panel names the item the way the list does.
-        const std::wstring alias = d.multi_count <= 1 && !d.path.empty()
+        const std::wstring alias = d.multi_count <= 1 && !d.path.empty() && !d.context
             ? app::AliasStore::Instance().Shown(d.path) : std::wstring();
         std::wstring shown = alias.empty() ? d.name : alias;
         if (d.multi_count > 1) {
@@ -659,7 +673,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
                 d.multi_count);
             shown = selected;
         }
-        const float nameRight = d.multi_count <= 1
+        const float nameRight = d.multi_count <= 1 && !d.context
             ? hit.preview_enable.left - 4.0f * s : panel.right - pad;
         text(shown, D2D1::RectF(panel.left + pad, y, nameRight,
                                 y + 22.0f * s),
@@ -678,7 +692,8 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
     y += 22.0f * s + 16.0f * s + 8.0f * s;
 
     // Button row: 打开 / 在新标签打开 / 复制路径 / 更多 (icon over label).
-    if (d.multi_count <= 1) {
+    // A context card has no actions: nothing is selected to act on.
+    if (d.multi_count <= 1 && !d.context) {
         auto rowButton = [&](const D2D1_RECT_F& rc, const wchar_t* glyph,
                              const wchar_t* fallback, const wchar_t* label, bool hovered,
                              bool primary, int64_t copied_ms = -1) {
@@ -764,7 +779,12 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         iy += 18.0f * s;
     };
 
-    if (d.multi_count > 1) {
+    if (d.context) {
+        // The card: one fact per row. No buttons, attribute toggles or security
+        // rows - those describe a selected entry, and nothing is selected.
+        for (const auto& row : d.context_rows) infoRow(row.first.c_str(), row.second, y);
+        y += 8.0f * s;
+    } else if (d.multi_count > 1) {
         text(pulse::l10n::Get(pulse::l10n::StringId::Information),
              D2D1::RectF(panel.left + 12.0f * s, y, panel.right - 12.0f * s,
                                           y + 20.0f * s),
@@ -775,7 +795,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
         y = iy + 8.0f * s;
     }
 
-    if (d.multi_count <= 1) {
+    if (d.multi_count <= 1 && !d.context) {
         for (const auto& def : kDetailsSections) {
             // Section separator (matches the 8 DIP gap in LayoutDetailsPanel).
             y += 8.0f * s;
