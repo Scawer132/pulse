@@ -1105,6 +1105,11 @@ bool MainRenderer::HoverMotionDamage(D2D1_RECT_F* out) const {
     for (size_t i = 0; i < list_hover_motion_.size(); ++i) {
         if (!list_hover_motion_[i].Active(m)) continue;
         if (i >= drawn_rows_.size() || drawn_rows_[i].empty()) return false;
+        // A plate-only frame samples just the plate's row, so the pane's
+        // ListShiftMotion baseline loses every other row and the next small
+        // list change (an inline folder expand) reads them all as new and
+        // flashes the pane. Same rule as HoverRowDamage above.
+        if (tree_guides_drawn_[i]) return false;
         UnionInto(r, any, list_hover_motion_[i].Span());
     }
     if (!any) return false;
