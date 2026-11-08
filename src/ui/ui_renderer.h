@@ -389,6 +389,8 @@ public:
     // Where a row hover change in a details list repaints: both rows as drawn
     // in the last full frame and the plate's path. False: redraw everything.
     bool HoverRowDamage(int pane_index, int old_source, int new_source, D2D1_RECT_F* out) const;
+    // The same for a hover change between two sidebar rows.
+    bool SidebarHoverDamage(int old_run, int new_run, D2D1_RECT_F* out) const;
     // A frame while only hover plates glide: their paths. False otherwise.
     bool HoverMotionDamage(D2D1_RECT_F* out) const;
     // The frame about to render redraws only `damage` (client px; null: all).
@@ -1184,6 +1186,8 @@ private:
     D2D1_RECT_F frame_damage_{};
     bool last_frame_overlay_ = true;     // the last frame drew a floating overlay
     std::array<std::vector<std::pair<int, D2D1_RECT_F>>, 8> drawn_rows_{};  // source, cell
+    // Where the sidebar's hoverable rows were drawn last frame (run, row).
+    std::unordered_map<int, D2D1_RECT_F> drawn_sidebar_slots_;
     // Panes whose last frame drew tree guides: a hover moves the highlighted
     // line, which spans rows outside the two that changed.
     std::array<bool, 8> tree_guides_drawn_{};

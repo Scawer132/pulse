@@ -2942,7 +2942,8 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         if (target_changed && hit.region == ui::HitTestResult::SidebarItem && fs::IsUncPath(hit.path))
             RequestUncProbe(*s, hit.path);
         // A move from one row to another of the same details list repaints
-        // those rows and the plate's path only (partial redraw).
+        // those rows and the plate's path only (partial redraw); so does a
+        // move between two sidebar rows.
         const auto row_region = [](int region) {
             using R = ui::HitTestResult;
             switch (static_cast<R::Region>(region)) {
@@ -2953,7 +2954,17 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 return false;
             }
         };
+        const auto sidebar_region = [](int region) {
+            using R = ui::HitTestResult;
+            switch (static_cast<R::Region>(region)) {
+            case R::SidebarItem: case R::SidebarItemAction: case R::SidebarItemExpand:
+                return true;
+            default:
+                return false;
+            }
+        };
         const int prev_row = s->hoverRow, prev_pane = s->hoverPaneIndex, prev_region = s->hoverRegion;
+        const int prev_control = s->hoverControlIndex;
         const int prev_crumb = s->breadcrumbHover;
         const bool prev_sidebar_hot = s->sidebarScrollbarHot;
         if (UpdatePointerHover(*s, hit, POINT{mx, my})) {
@@ -2961,6 +2972,10 @@ LRESULT HandleMouseMove(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             if (row_region(prev_region) && row_region(s->hoverRegion) && prev_pane == s->hoverPaneIndex &&
                 prev_crumb == s->breadcrumbHover && prev_sidebar_hot == s->sidebarScrollbarHot &&
                 s->renderer.HoverRowDamage(prev_pane, prev_row, s->hoverRow, &rows))
+                app::InvalidatePartial(hwnd, app::DamagePixels(rows));
+            else if (sidebar_region(prev_region) && sidebar_region(s->hoverRegion) &&
+                     prev_crumb == s->breadcrumbHover && prev_sidebar_hot == s->sidebarScrollbarHot &&
+                     s->renderer.SidebarHoverDamage(prev_control, s->hoverControlIndex, &rows))
                 app::InvalidatePartial(hwnd, app::DamagePixels(rows));
             else
                 InvalidateRect(hwnd, nullptr, FALSE);

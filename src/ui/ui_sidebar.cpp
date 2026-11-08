@@ -228,6 +228,16 @@ void MainRenderer::DrawSidebar(const WindowViewModel& vm, const D2D1_RECT_F& rec
 
     std::vector<SidebarSlot> slots;
     LayoutSidebar(vm, sb, scale_, slots);
+    // Last frame's hoverable rows by run: a hover change between two of them
+    // repaints both rows and the plate's path only (SidebarHoverDamage).
+    drawn_sidebar_slots_.clear();
+    for (const auto& slot : slots) {
+        if ((slot.kind != SidebarSlot::Item && slot.kind != SidebarSlot::Drive &&
+             slot.kind != SidebarSlot::Tag) ||
+            slot.group < 0 || slot.item < 0)
+            continue;
+        drawn_sidebar_slots_[slot.run] = slot.rc;
+    }
     const bool compact = SidebarRailLayout(w, scale_);
     painter_.BeginFrame(theme, IsHighContrast());
 
@@ -1051,6 +1061,35 @@ void MainRenderer::DrawSidebar(const WindowViewModel& vm, const D2D1_RECT_F& rec
     painter_.DrawScrollbar(SidebarScrollbarSpec(vm, sb, scale_));
     if (label_layer) dc->PopLayer();
     dc->PopAxisAlignedClip();
+}
+
+bool MainRenderer::SidebarHoverDamage(int old_run, int new_run, D2D1_RECT_F* out) const {
+    if (!out) return false;
+    D2D1_RECT_F r{};
+    bool any = false;
+    const auto unite = [&](const D2D1_RECT_F& a) {
+        if (a.right <= a.left || a.bottom <= a.top) return;
+        if (!any) {
+            r = a;
+            any = true;
+            return;
+        }
+        r.left = (std::min)(r.left, a.left);
+        r.top = (std::min)(r.top, a.top);
+        r.right = (std::max)(r.right, a.right);
+        r.bottom = (std::max)(r.bottom, a.bottom);
+    };
+    for (const int run : {old_run, new_run}) {
+        if (run < 0) continue;
+        const auto it = drawn_sidebar_slots_.find(run);
+        if (it == drawn_sidebar_slots_.end()) return false;
+        unite(it->second);
+    }
+    unite(SidebarMotionFor(this).hover.Span());
+    if (!any) return false;
+    const float margin = 4.0f * scale_;
+    *out = D2D1::RectF(r.left - margin, r.top - margin, r.right + margin, r.bottom + margin);
+    return true;
 }
 
 void MainRenderer::LaunchStarFlight(float x, float y) {
