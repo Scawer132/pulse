@@ -1,4 +1,5 @@
 #include "app_internal.h"
+#include "app_preview_policy.h"
 #include "../ops/clipboard.h"
 #include "../ui/quick_preview_command.h"
 #include "../fs/cloud_state.h"
@@ -23,6 +24,9 @@ HoldPeek g_hold;
 } // namespace
 
 void ArmHoldPreview(AppState& s, int index, POINT client) {
+    // 按住预览 belongs to 悬停与空格预览: its row is disabled with the master
+    // or that switch off, and a long press must not start a preview host then.
+    if (!app::HoverSpacePreviewOn(s.appPrefs)) return;
     const int delay = app::NormalizeHoldPreview(s.appPrefs.hold_preview_ms);
     if (delay <= 0 || !s.hwnd || s.quickPreview.visible() || index < 0) return;
     if ((GetKeyState(VK_CONTROL) | GetKeyState(VK_SHIFT) | GetKeyState(VK_MENU)) & 0x8000) return;
