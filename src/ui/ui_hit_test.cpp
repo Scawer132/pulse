@@ -107,7 +107,11 @@ HitTestResult MainRenderer::HitTest(const WindowViewModel& vm, const D2D1_RECT_F
     // Embedded hosts own the title strip and footer controls.
     if (embedded_ && (y < title_bar_height_ || y >= rect.bottom - status_height_)) return r;
 
-    const auto layout_hit = PaneLayoutHit(vm, rect, x, y, scale_, compositor_->DwriteFactory(), compositor_->SmallFormat());
+    // Selftests hit-test a renderer that owns no compositor; the layout helpers
+    // and text measurement below all take null for it.
+    const auto layout_hit = PaneLayoutHit(vm, rect, x, y, scale_,
+        compositor_ ? compositor_->DwriteFactory() : nullptr,
+        compositor_ ? compositor_->SmallFormat() : nullptr);
     if (layout_hit.region != HitTestResult::None) return layout_hit;
     if (vm.status.history_open) {
         const auto bounds = UndoHistoryBounds(vm, rect, scale_);
