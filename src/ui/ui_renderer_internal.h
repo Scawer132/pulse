@@ -2792,7 +2792,7 @@ struct SettingsLayout {
     D2D1_RECT_F integration_cover[3]{}, integration_options_head{}, integration_try{}, integration_hint_text{}, integration_hint_action{};
     float integration_text_right = 0.0f;
     // Quick Look page: 预览方式 (hover card or Space) and the hover delay.
-    D2D1_RECT_F trigger_section{}, trigger_row{}, trigger_choice[2]{}, hover_delay_row{}, hover_delay_choice[3]{};
+    D2D1_RECT_F trigger_row{}, trigger_choice[2]{}, hover_delay_row{}, hover_delay_choice[3]{};
     D2D1_RECT_F hover_size_row{}, hover_size_choice[4]{};  // 卡片尺寸: 小 / 中 / 大 / 特大
     // Quick Look page: 启用预览 and its two children (悬停与空格预览, 详情面板预览),
     // laid out as a master row with the children on a tinted band below it.

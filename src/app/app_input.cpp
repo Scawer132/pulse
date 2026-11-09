@@ -161,7 +161,7 @@ static void NewFolderOrConnect(AppState& s) {
     if (tab && IsConnectServerPage(tab->current_path)) RunConnectServerDialog(s);
     else CreateNewItem(s, true);
 }
-// Settings toggles that belong to the network page (40-42, 46) are handled
+// Settings toggles that belong to the network page (46-49) are handled
 // by app_network_page; the rest by the settings controller.
 static void ToggleSetting(AppState& s, int index) {
     if (s.settings.page() == 12 && HandleNetworkSettingToggle(s, index)) return;
