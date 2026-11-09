@@ -266,9 +266,61 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
             panel.right - pad, previewTop + previewH);
         const D2D1_RECT_F contentRc = D2D1::RectF(preview.left + 2.0f * s, preview.top + 2.0f * s,
             preview.right - 2.0f * s, preview.bottom - 2.0f * s);
-        if (d.preview_icon_only) {
+        if (d.pc_card) {
+            // 此电脑: the well is the card's header, not a preview box. The OS
+            // logo on the left, the machine's identity beside it, facts below.
+            // It comes before the icon-only and selection branches because a
+            // system card has no path to preview and must never inherit one.
+            const float logo = 64.0f * s;
+            const float logoX = contentRc.left + 6.0f * s;
+            const float logoTop = contentRc.top +
+                ((contentRc.bottom - contentRc.top) - logo) * 0.5f;
+            const D2D1_RECT_F logoRc = D2D1::RectF(logoX, logoTop, logoX + logo, logoTop + logo);
+            if (!DrawFluentSvg(IDR_WINDOWS_OS_SVG, logoRc, 1.0f, nullptr, true)) {
+                // Missing resource or no D2D SVG support: keep a recognizable glyph.
+                if (!DrawFluentSvg(IDR_FLUENT_PC_SVG, logoRc, 1.0f, nullptr, true))
+                    DrawIconText(logoRc.left, logoRc.top, logo, logo, L"\xE977", L"PC",
+                                 theme.text_secondary, 1.0f);
+            }
+            const float textX = logoX + logo + 14.0f * s;
+            const float textW = (std::max)(24.0f * s, contentRc.right - textX);
+            // Boxes follow the text size, so a larger interface font (125/150%)
+            // still fits the three lines inside the band.
+            IDWriteTextFormat* header_fmt = compositor_->HeaderFormat();
+            IDWriteTextFormat* small_fmt_h = compositor_->SmallFormat();
+            const float title_h = (std::max)(20.0f * s,
+                header_fmt ? header_fmt->GetFontSize() * 1.30f : 20.0f * s);
+            const float line_h = (std::max)(18.0f * s,
+                small_fmt_h ? small_fmt_h->GetFontSize() * 1.40f : 18.0f * s);
+            const float gap1 = 5.0f * s, gap2 = 3.0f * s;
+            // A long OS name wraps inside the identity block instead of ending
+            // in an ellipsis on narrow panels and in every UI language.
+            const auto os_text = SplitDetailLine(d.subtitle_text, textW,
+                                                 compositor_->DwriteFactory(), small_fmt_h);
+            const float os_h = (os_text.second.empty() ? 1.0f : 2.0f) * line_h;
+            const float blockH = title_h + gap1 + os_h + gap2 + line_h;
+            const float textY = logoTop + (logo - blockH) * 0.5f;
+            text(d.name, D2D1::RectF(textX, textY, textX + textW, textY + title_h),
+                 header_fmt, theme.text);
+            const float osTop = textY + title_h + gap1;
+            MakeBrush(dc, theme.text, brText_);
+            if (os_text.second.empty()) {
+                DrawTextEndEllipsis(compositor_, small_fmt_h, brText_.get(), d.subtitle_text,
+                                    textX, osTop, textW, line_h);
+            } else {
+                DrawTextEndEllipsis(compositor_, small_fmt_h, brText_.get(), os_text.first,
+                                    textX, osTop, textW, line_h);
+                DrawTextEndEllipsis(compositor_, small_fmt_h, brText_.get(), os_text.second,
+                                    textX, osTop + line_h, textW, line_h);
+            }
+            MakeBrush(dc, theme.text_secondary, brTextSecondary_);
+            DrawTextEndEllipsis(compositor_, small_fmt_h, brTextSecondary_.get(),
+                                d.pc_meta, textX, osTop + os_h + gap2, textW, line_h);
+        } else if (d.preview_icon_only || (d.context && d.multi_count <= 1)) {
             // 启用预览 › 详情面板预览 off: the well keeps the file-type icon the
             // way a folder's preview does, and the file itself is never read.
+            // A folder card also lands here: the embedded host needs a selected
+            // row, so without the icon its well would stay an empty box.
             const float icon = 58.0f * s;
             const float icon_cx = (contentRc.left + contentRc.right) * 0.5f;
             const float icon_top = contentRc.top +
