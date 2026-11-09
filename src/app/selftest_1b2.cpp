@@ -9445,6 +9445,72 @@ bool RunDetailsInfoCardTest() {
     return g_fail == before;
 }
 
+// The panel's scroll offset belongs to the subject it describes. Scrolling a
+// selected drive and then clearing the selection must show the 此电脑 card from
+// the top, not shifted up by the drive's offset (which used to draw the sheet
+// over its pinned header until a wheel event clamped the offset).
+bool RunDetailsPanelScrollTest() {
+    const int before = g_fail;
+    auto state = std::make_unique<AppState>();
+    state->places.persist = false;
+    state->appPrefs.persist = false;
+    state->isolatedTest = true;
+    HWND hwnd = CreateWindowExW(0, L"STATIC", L"", WS_POPUP,
+        0, 0, 1200, 800, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+    Check(hwnd != nullptr, L"details scroll: isolated owner created");
+    if (!hwnd) return false;
+    state->hwnd = hwnd;
+    if (!state->compositor.Init(hwnd)) {
+        Check(false, L"details scroll: graphics initialized");
+        DestroyWindow(hwnd);
+        return false;
+    }
+    state->compositor.RecreateTextFormats(1.0f);
+    state->compositor.Resize(1200, 800);
+    state->renderer.SetCompositor(&state->compositor);
+    state->showDetailsPanel = true;
+    state->renderer.SetDetailsPanelVisible(true);
+    // The card, not the background size walk, is under test.
+    state->appPrefs.folder_size_auto = false;
+    state->window_tabs.NewTab(L"C:\\");
+    state->pane = state->window_tabs.Active()->panes.front().get();
+    app::Tab* tab = state->pane ? state->pane->ActiveTab() : nullptr;
+    Check(tab != nullptr, L"details scroll: tab created");
+    if (tab) {
+        tab->current_path.clear();   // 此电脑
+        auto entries = std::make_shared<std::vector<fs::DirEntry>>(1);
+        auto& drive = (*entries)[0];
+        drive.name = L"Windows-SSD (C:)";
+        drive.full_path = L"pulse:test-drive";   // virtual: no metadata probe
+        drive.is_dir = true;
+        drive.attrs = FILE_ATTRIBUTE_DIRECTORY;
+        tab->SetSnapshot(entries);
+        tab->loading = false;
+
+        auto vm = BuildVm(*state);
+        Check(vm.details.pc_card && vm.details.context,
+            L"details scroll: 此电脑 shows the system card");
+        tab->SelectOnly(0);
+        vm = BuildVm(*state);
+        Check(vm.details.has_selection && vm.details.path == L"pulse:test-drive",
+            L"details scroll: the selected drive is the panel's subject");
+        state->detailsScroll = 240.0f;
+        vm = BuildVm(*state);
+        Check(std::fabs(vm.details.scroll_y - 240.0f) < 0.01f,
+            L"details scroll: the same subject keeps its scroll offset");
+        tab->ClearSelection();
+        vm = BuildVm(*state);
+        Check(vm.details.pc_card && std::fabs(vm.details.scroll_y) < 0.01f &&
+              state->detailsScroll == 0.0f,
+            L"details scroll: clearing the selection starts the card at the top");
+    }
+    state->renderer.SetCompositor(nullptr);
+    state->compositor.Shutdown();
+    DestroyWindow(hwnd);
+    state->hwnd = nullptr;
+    return g_fail == before;
+}
+
 } // namespace
 
 int RunSelfTest1B2() {
@@ -9468,6 +9534,13 @@ int RunSelfTest1B2() {
                                 ARRAYSIZE(details_card_case)) &&
         wcscmp(details_card_case, L"details-info-card") == 0) {
         const bool passed = RunDetailsInfoCardTest();
+        if (g_log) { fclose(g_log); g_log = nullptr; }
+        return passed ? 0 : 1;
+    }
+    if (GetEnvironmentVariableW(L"PULSE_SELFTEST_CASE", details_card_case,
+                                ARRAYSIZE(details_card_case)) &&
+        wcscmp(details_card_case, L"details-panel-scroll") == 0) {
+        const bool passed = RunDetailsPanelScrollTest();
         if (g_log) { fclose(g_log); g_log = nullptr; }
         return passed ? 0 : 1;
     }

@@ -958,6 +958,10 @@ struct AppState : AppCoreOwner {
     uint32_t detailsCollapsedMask = (1u << 1) | (1u << 3) | (1u << 4);
     // Per-selection probe cache (file times + star state), keyed by path.
     std::wstring detailsSelPath;
+    // What the panel describes (selected item, multi selection, folder card or
+    // 此电脑). A new subject starts at the top instead of keeping the previous
+    // subject's scroll offset.
+    std::wstring detailsSubject;
     bool detailsSelValid = false;
     FILETIME detailsCreated{}, detailsModified{}, detailsAccessed{};
     bool detailsStarred = false;

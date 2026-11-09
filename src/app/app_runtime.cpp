@@ -3265,6 +3265,23 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
             // 文件夹大小 off: the size row offers 计算大小 instead of walking.
             if (dv.is_dir && s.appPrefs.folder_size_auto) sizeTarget = dv.path;
         }
+        // The panel keeps one scroll position per subject. Clearing the
+        // selection, leaving a folder card or switching folders starts the new
+        // card at the top - otherwise the offset of the previous subject draws
+        // the card shifted up, over its pinned header.
+        if (probe_details) {
+            std::wstring subject;
+            if (dv.has_selection && selCount == 1) subject = L"S" + dv.path;
+            else if (dv.has_selection) subject = L"M";
+            else if (dv.pc_card) subject = L"P";
+            else if (dv.path.empty()) subject = L"E";
+            else subject = L"C" + dv.path;
+            if (subject != s.detailsSubject) {
+                s.detailsSubject = std::move(subject);
+                s.detailsScroll = 0.0f;
+                dv.scroll_y = 0.0f;
+            }
+        }
     }
     std::wstring requestedSizePath;
     {

@@ -707,8 +707,14 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
     y = (card_header_in_well
              ? previewTop + previewH + 12.0f * s
              : previewTop + DetailsPreviewBand(previewH, s)) - d.scroll_y * s;
+    // The well and the fold bar are pinned above the scrolling facts. A system
+    // card has no fold bar, so without this its scrolled sheet would paint over
+    // the pinned header (and above the card's own top edge).
+    const float restTop = card_header_in_well
+        ? previewTop + previewH
+        : std::max(panel.top, hit.preview_toggle.bottom);
     const D2D1_RECT_F restClip = D2D1::RectF(
-        panel.left, hit.preview_toggle.bottom,
+        panel.left, restTop,
         panel.right, panel.bottom);
     dc->PushAxisAlignedClip(restClip, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
     // The reveal: an opacity mask whose soft edge sweeps down, and a rise.
