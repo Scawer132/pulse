@@ -1081,4 +1081,16 @@ inline std::wstring ClipboardPath(const std::wstring& p) {
     return path::StripExtendedPathPrefix(p);
 }
 
+// Safe mode draws without the wallpaper or a heavy window effect, but that
+// fallback is a property of the run, not of the saved configuration: a
+// crash-loop start must not rewrite app.json and leave the user without their
+// background image on the next normal start.
+inline ui::WindowEffect EffectiveWindowEffect(const AppState& s) {
+    return s.safeMode ? ui::WindowEffect::None
+                      : ui::WindowEffectFromId(s.appPrefs.window_effect);
+}
+inline std::wstring EffectiveBackgroundImage(const AppState& s) {
+    return s.safeMode ? std::wstring() : s.appPrefs.background_image;
+}
+
 } // namespace pulse

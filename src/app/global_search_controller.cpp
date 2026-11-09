@@ -132,8 +132,8 @@ GlobalSearchEvents MakeGlobalSearchEvents(AppState& s) {
 
 // Appearance, context and callbacks: before every summon and the pre-warm.
 void PrepareGlobalSearchWindow(AppState& s) {
-    s.globalSearchWindow.SetAppearance(s.darkMode, ui::WindowEffectFromId(s.appPrefs.window_effect),
-        s.appPrefs.background_image, s.accentColor);
+    s.globalSearchWindow.SetAppearance(s.darkMode, EffectiveWindowEffect(s),
+        EffectiveBackgroundImage(s), s.accentColor);
     // The search window is process-wide and outlives the window that opened
     // it (M4b): continue in the most recent window when the handoff happens.
     s.globalSearchWindow.SetHandoffHandler([core = &s.core](const GlobalSearchHandoff& request) {

@@ -9511,6 +9511,53 @@ bool RunDetailsPanelScrollTest() {
     return g_fail == before;
 }
 
+// A crash-loop safe-mode start is a property of the run, not of the saved
+// configuration: it draws without the wallpaper and heavy effect but must
+// leave app.json alone, or the next normal start finds the appearance gone.
+bool RunSafeModeAppearanceTest() {
+    const int before = g_fail;
+    auto state = std::make_unique<AppState>();
+    state->places.persist = false;
+    state->appPrefs.persist = false;
+    state->isolatedTest = true;
+    HWND hwnd = CreateWindowExW(0, L"STATIC", L"", WS_POPUP,
+        0, 0, 1200, 800, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+    Check(hwnd != nullptr, L"safe mode: isolated owner created");
+    if (!hwnd) return false;
+    state->hwnd = hwnd;
+    if (!state->compositor.Init(hwnd)) {
+        Check(false, L"safe mode: graphics initialized");
+        DestroyWindow(hwnd);
+        return false;
+    }
+    state->compositor.RecreateTextFormats(1.0f);
+    state->compositor.Resize(1200, 800);
+    state->renderer.SetCompositor(&state->compositor);
+    state->window_tabs.NewTab(L"C:\\");
+    state->pane = state->window_tabs.Active()->panes.front().get();
+    state->appPrefs.background_image = L"C:\\wall.png";
+    state->appPrefs.window_effect = L"mica-alt";
+
+    state->safeMode = true;
+    auto vm = BuildVm(*state, false);
+    Check(vm.background_image.empty() && vm.window_effect == ui::WindowEffect::None,
+        L"safe mode: the run draws without the wallpaper and window effect");
+    Check(state->appPrefs.background_image == L"C:\\wall.png" &&
+          state->appPrefs.window_effect == L"mica-alt",
+        L"safe mode: the saved appearance is left untouched");
+    state->safeMode = false;
+    vm = BuildVm(*state, false);
+    Check(vm.background_image == L"C:\\wall.png" &&
+          vm.window_effect == ui::WindowEffect::MicaAlt,
+        L"safe mode: the next normal start still has the user's appearance");
+
+    state->renderer.SetCompositor(nullptr);
+    state->compositor.Shutdown();
+    DestroyWindow(hwnd);
+    state->hwnd = nullptr;
+    return g_fail == before;
+}
+
 } // namespace
 
 int RunSelfTest1B2() {
@@ -9541,6 +9588,13 @@ int RunSelfTest1B2() {
                                 ARRAYSIZE(details_card_case)) &&
         wcscmp(details_card_case, L"details-panel-scroll") == 0) {
         const bool passed = RunDetailsPanelScrollTest();
+        if (g_log) { fclose(g_log); g_log = nullptr; }
+        return passed ? 0 : 1;
+    }
+    if (GetEnvironmentVariableW(L"PULSE_SELFTEST_CASE", details_card_case,
+                                ARRAYSIZE(details_card_case)) &&
+        wcscmp(details_card_case, L"safe-mode-appearance") == 0) {
+        const bool passed = RunSafeModeAppearanceTest();
         if (g_log) { fclose(g_log); g_log = nullptr; }
         return passed ? 0 : 1;
     }

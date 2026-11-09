@@ -1434,13 +1434,15 @@ LRESULT CALLBACK WndProcImpl(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         }
         s->compositor.RecreateTextFormats(s->scale);
         if (init_core) {
-            if (s->safeMode) {
-                s->appPrefs.window_effect = L"none";
-                s->appPrefs.background_image.clear();
-            } else if (ShellTagHeadlessLaunch()) {
-                g_servicesDeferred = true;
-            } else {
-                StartMenuServices(*s);
+            // Safe mode skips the menu services; its appearance (no wallpaper,
+            // no heavy effect) is applied when the view model is built, so
+            // app.json keeps the user's choices for the next normal start.
+            if (!s->safeMode) {
+                if (ShellTagHeadlessLaunch()) {
+                    g_servicesDeferred = true;
+                } else {
+                    StartMenuServices(*s);
+                }
             }
         }
         // Process wide: every window's menus and frame copies follow it.

@@ -5463,11 +5463,12 @@ void ShowRecyclePlaceMenu(AppState& s, POINT screen_pt) {
 }
 void ApplyAppWindowChrome(AppState& s) {
     if (!s.hwnd) return;
-    const auto effect = ui::WindowEffectFromId(s.appPrefs.window_effect);
-    s.globalSearchWindow.SetAppearance(s.darkMode, effect, s.appPrefs.background_image, s.accentColor);
+    const auto effect = EffectiveWindowEffect(s);
+    const std::wstring background = EffectiveBackgroundImage(s);
+    s.globalSearchWindow.SetAppearance(s.darkMode, effect, background, s.accentColor);
     // Any selected image takes over the window base: sampled as material for
     // Mica/Acrylic, drawn as-is when the effect is None.
-    const bool sample_image = !s.appPrefs.background_image.empty();
+    const bool sample_image = !background.empty();
     if (sample_image) {
         ui::ApplyWindowEffect(s.hwnd, ui::WindowEffect::None, s.darkMode);
         s.backdropActive = true;
@@ -5537,8 +5538,8 @@ void ApplyAccentFromPrefs(AppState& s, bool snap_picker) {
     const bool follow = !custom && (s.darkMode || s.appPrefs.accent_follow_system);
     if (!custom && !follow) rgb = 0x527D70;
     s.accentColor = ResolveAccentColor(s.appPrefs, s.darkMode);
-    s.globalSearchWindow.SetAppearance(s.darkMode, ui::WindowEffectFromId(s.appPrefs.window_effect),
-        s.appPrefs.background_image, s.accentColor);
+    s.globalSearchWindow.SetAppearance(s.darkMode, EffectiveWindowEffect(s),
+        EffectiveBackgroundImage(s), s.accentColor);
     s.bloom_accent.SetSelection(follow, rgb, snap_picker);
     if (s.menu) s.menu->SetTheme(s.darkMode, s.accentColor);
     if (s.operationWindow) s.operationWindow->SetTheme(s.darkMode, s.accentColor);
@@ -5614,8 +5615,9 @@ void ToggleQuickPreview(AppState& s) {
     if(DeferContentSelection(s,[](AppState& v){ToggleQuickPreview(v);},true)) return;
     ui::QuickPreviewItem item;
     if (SelectedQuickPreviewItem(s, item)) {
-        const auto effect = s.appPrefs.background_image.empty()
-            ? ui::WindowEffectFromId(s.appPrefs.window_effect)
+        const std::wstring background = EffectiveBackgroundImage(s);
+        const auto effect = background.empty()
+            ? EffectiveWindowEffect(s)
             : ui::WindowEffect::None;
         // Grow the preview out of the selected item's icon (screen point).
         POINT origin{};

@@ -3364,8 +3364,8 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
     FillPaneSlots(s, vm);
     FillChangePopover(s, vm);
     FillFolderSizes(s, vm);
-    vm.window_effect = ui::WindowEffectFromId(s.appPrefs.window_effect);
-    vm.background_image = s.appPrefs.background_image;
+    vm.window_effect = EffectiveWindowEffect(s);
+    vm.background_image = EffectiveBackgroundImage(s);
     vm.wallpaper_look = s.appPrefs.wallpaper_look;
     vm.wallpaper_blur = s.appPrefs.wallpaper_blur;
     vm.frame_transparency = s.appPrefs.frame_transparency;
