@@ -1,9 +1,11 @@
-#pragma once
+﻿#pragma once
 #include <d2d1.h>
 #include <windows.h>
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <future>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -26,6 +28,8 @@ public:
 
     void SetNotifyWindow(HWND hwnd);
     void Hide();
+    std::shared_future<void> SuspendVolume(const std::wstring& root);
+    void ResumeVolume(const std::wstring& root);
     void Reset();
     uint64_t NextWatchdogDeadline() const;
     // Re-evaluates the popup overlay's screen position after its owner moves.
@@ -34,6 +38,9 @@ public:
     // Main window WM_ACTIVATE / WM_ACTIVATEAPP. Overlay is WS_EX_NOACTIVATE so
     // it never receives those; TOPMOST must drop here or it covers other apps.
     void NotifyAppActivate(bool active);
+    // An app popup over the pane (the toolbar picker) hides the overlay
+    // without unloading the preview; false shows it again in place.
+    void SetCovered(bool covered);
 
     // enabled=false unloads immediately. bounds are owner-client pixels.
     void Sync(HWND owner, const D2D1_RECT_F& bounds, const std::wstring& path,
@@ -77,11 +84,13 @@ private:
     std::vector<std::shared_ptr<WorkerState>> retired_;
     HWND notify_ = nullptr;
     bool app_active_ = true;
+    bool covered_ = false;
     std::wstring last_identity_;
     std::wstring last_path_;
     RECT last_bounds_{};
     HWND last_owner_ = nullptr;
     bool last_enabled_ = false;
+    std::map<std::wstring, std::shared_future<void>> suspended_volumes_;
 };
 
 } // namespace pulse::ui

@@ -2,6 +2,7 @@
 #include "ui_renderer.h"
 #include "ui_renderer_internal.h"
 #include "../common/localization.h"
+#include <algorithm>
 
 namespace pulse::ui {
 
@@ -110,11 +111,13 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
                                     right - r.left - 54*s, theme.text_secondary);
         painter_.DrawSegmentedTrack(D2D1::RectF(choices[0].left, choices[0].top,
                                                 choices[count - 1].right, choices[count - 1].bottom));
+        if (checked >= 0 && checked < count) DrawSettingsSegmentPlate(110000 + static_cast<int>(first), checked, choices[checked]);
         for (int i = 0; i < count; ++i) {
             fluent::SegmentedItemSpec item{};
             item.bounds = choices[i];
             item.text = label(i);
             item.state.checked = i == checked;
+            item.suppress_plate = item.state.checked;
             item.state.hovered = hovered(static_cast<PackAction>(static_cast<int>(first) + i));
             item.shared_track = true;
             item.position = i == 0 ? fluent::SegmentPosition::First
@@ -164,8 +167,8 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
         switch_row(lay.preview_hover_row, pack_text::HoverChildTitle(), pack_text::HoverChildDesc(),
                    vm.settings_preview_hover_space, PackAction::PreviewHoverSpace, previews_on);
         undim(faded);
-        // 预览方式, 悬停延迟 and 卡片尺寸 belong to 悬停与空格预览, so they fade
-        // with that child too.
+        // 预览方式, 悬停延迟, 卡片尺寸 and 按住预览 belong to 悬停与空格预览,
+        // so they fade with that child too.
         faded = dim(!hover_preview_on);
         const int trigger = vm.settings_preview_trigger == 1 ? 1 : 0;
         choice_row(lay.trigger_row, lay.trigger_choice, 2, trigger, PackAction::TriggerHover, L"\xE890",
@@ -173,13 +176,34 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
         const int delay = vm.settings_hover_delay_ms == 300 ? 0 : vm.settings_hover_delay_ms == 800 ? 2 : 1;
         choice_row(lay.hover_delay_row, lay.hover_delay_choice, 3, delay, PackAction::HoverDelayShort, L"\xE916",
                    pack_text::DelayTitle(), pack_text::DelayDesc(), &pack_text::DelayChoice, false);
-        const int card_size = vm.settings_hover_card_size == 0 ? 0 : vm.settings_hover_card_size == 2 ? 2 : 1;
-        choice_row(lay.hover_size_row, lay.hover_size_choice, 3, card_size, PackAction::HoverSizeSmall, L"\xE740",
+        const int card_size = std::clamp(vm.settings_hover_card_size, 0, 3);
+        choice_row(lay.hover_size_row, lay.hover_size_choice, 4, card_size, PackAction::HoverSizeSmall, L"\xE740",
                    pack_text::SizeTitle(), pack_text::SizeDesc(), &pack_text::SizeChoice, false);
+        const int hold = vm.settings_hold_preview_ms == 300 ? 1 : vm.settings_hold_preview_ms == 500 ? 2
+                       : vm.settings_hold_preview_ms == 800 ? 3 : 0;
+        choice_row(lay.hold_row, lay.hold_choice, 4, hold, PackAction::HoldOff, L"\xE7C9",
+                   pack_text::HoldTitle(), pack_text::HoldDesc(), &pack_text::HoldChoice, false);
         undim(faded);
         faded = dim(!previews_on);
         switch_row(lay.preview_details_row, pack_text::DetailsChildTitle(), pack_text::DetailsChildDesc(),
                    vm.settings_preview_details, PackAction::PreviewDetails, previews_on);
+        // 预览窗口: the size Space opens it at, Space on media, loop.
+        text(pack_text::WindowSection(), lay.window_section);
+        choice_row(lay.preview_size_row, lay.preview_size_choice, 5, std::clamp(vm.settings_preview_size, 0, 4),
+                   PackAction::PreviewSizeFit, L"\xE9A6", pack_text::WindowSizeTitle(), pack_text::WindowSizeDesc(),
+                   &pack_text::WindowSizeChoice, false);
+        if (lay.preview_remember_row.bottom > lay.preview_remember_row.top) {
+            card(lay.preview_remember_row);
+            hover_row(lay.preview_remember_row, PackAction::PreviewRememberSize);
+            setting(lay.preview_remember_row, L"\xE81C", pack_text::RememberTitle(), pack_text::RememberDesc());
+            toggle(row_switch(lay.preview_remember_row), vm.settings_preview_remember, PackAction::PreviewRememberSize);
+        }
+        choice_row(lay.space_row, lay.space_choice, 2, vm.settings_preview_space_closes ? 0 : 1,
+                   PackAction::SpaceClose, L"\xE765", pack_text::SpaceTitle(), pack_text::SpaceDesc(),
+                   &pack_text::SpaceChoice, false);
+        choice_row(lay.loop_row, lay.loop_choice, 3, std::clamp(vm.settings_preview_loop, 0, 2),
+                   PackAction::LoopAnimations, L"\xE8EE", pack_text::LoopTitle(), pack_text::LoopDesc(),
+                   &pack_text::LoopChoice, false);
         undim(faded);
     }
 
@@ -274,6 +298,14 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
     }
     return;
     }
+
+    card(lay.pack_native_settings);
+    hover_row(lay.pack_native_settings, PackAction::NativeSettings);
+    setting(lay.pack_native_settings, L"\xE713", l10n::Get(l10n::StringId::NativeExtensionSettingsTitle),
+        l10n::Get(l10n::StringId::NativeExtensionSettingsIntro));
+    painter_.DrawGlyph(L"\xE76C", D2D1::RectF(lay.pack_native_settings.right-38*s,
+        lay.pack_native_settings.top+24*s, lay.pack_native_settings.right-18*s,
+        lay.pack_native_settings.top+44*s), theme.text_secondary);
 
     // Summary: count, disk use and location.
     {
@@ -381,15 +413,6 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
                PackAction::RawEnable, PackAction::RawInstall, PackAction::RawRemove,
                vm.settings_pack_raw_notice, lay.pack_raw_update, pack_text::RawUpdate(vm), PackAction::RawUpdate});
 
-    // 7-Zip archive contents.
-    text(pack_text::Archive(), lay.pack_archive_section);
-    draw_card({lay.pack_archive_card, lay.pack_archive_badge, lay.pack_archive_enable, lay.pack_archive_primary,
-               lay.pack_archive_notice, L"\xE8B7",
-               pack_text::ArchiveTitle(), pack_text::ArchiveDesc(), pack_text::ArchiveMeta(), pack_text::ArchiveBadge(vm),
-               pack_text::ShowsArchiveEnable(vm), vm.settings_pack_archive_enabled, vm.settings_pack_archive_installed,
-               vm.settings_pack_archive_installing, vm.settings_pack_archive_available, vm.settings_pack_archive_progress, pack_text::ArchivePrimary(vm),
-               PackAction::ArchiveEnable, PackAction::ArchiveInstall, PackAction::ArchiveRemove,
-               vm.settings_pack_archive_notice, lay.pack_archive_update, pack_text::ArchiveUpdate(vm), PackAction::ArchiveUpdate});
 
     // 搜索: 内容搜索 (index status in the notice box once installed) and OCR.
     text(pack_text::SearchSection(), lay.pack_search_section);
@@ -458,6 +481,22 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
     }
     text(pack_text::Advanced(), lay.pack_advanced_section);
     card(lay.pack_group);
+    if (lay.pack_dl_row.bottom > lay.pack_dl_row.top) {
+        // 下载源: title and caption, the drop-down at the right.
+        const auto& r = lay.pack_dl_row;
+        const float right = lay.pack_dl_choice.left - 14*s;
+        DrawIconText(r.left + 16*s, r.top + 20*s, 24*s, 24*s, L"\xE896", L"", theme.text_secondary, 0.85f);
+        text(pack_text::DownloadSourceTitle(), D2D1::RectF(r.left + 54*s, r.top + 10*s, right, r.top + 34*s));
+        painter_.DrawWrappedCaption(pack_text::DownloadSourceDesc(), D2D1::Point2F(r.left + 54*s, r.top + 35*s),
+                                    right - r.left - 54*s, theme.text_secondary);
+        fluent::ButtonSpec control{};
+        control.bounds = lay.pack_dl_choice;
+        control.text = pack_text::SourceName(vm.settings_pack_download_source);
+        control.drop_down = true;
+        control.state.hovered = hovered(PackAction::DownloadSource);
+        painter_.DrawButton(control);
+        divider_below(r);
+    }
     hover_row(lay.pack_auto_update_row, PackAction::AutoUpdate);
     setting(lay.pack_auto_update_row, L"\xE72C", pack_text::AutoUpdateTitle(), pack_text::AutoUpdateDesc());
     toggle(row_switch(lay.pack_auto_update_row), vm.settings_pack_auto_update, PackAction::AutoUpdate);
@@ -465,6 +504,52 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
     hover_row(lay.pack_remove_row, PackAction::RemoveOnUninstall);
     setting(lay.pack_remove_row, L"\xE74D", pack_text::RemoveTitle(), pack_text::RemoveDesc());
     toggle(row_switch(lay.pack_remove_row), vm.settings_pack_remove_on_uninstall, PackAction::RemoveOnUninstall);
+
+    if (lay.pack_speed_card.bottom > lay.pack_speed_card.top) {
+        // 测速: what it does and its button, then a row per source with a bar
+        // (shorter for a slower source) and the result.
+        card(lay.pack_speed_card);
+        const auto& c = lay.pack_speed_card;
+        const float right = lay.pack_speed_button.left - 14*s;
+        DrawIconText(c.left + 16*s, c.top + 20*s, 24*s, 24*s, L"\xE916", L"", theme.text_secondary, 0.85f);
+        text(pack_text::SpeedTestTitle(), D2D1::RectF(c.left + 54*s, c.top + 10*s, right, c.top + 34*s));
+        painter_.DrawWrappedCaption(pack_text::SpeedTestDesc(), D2D1::Point2F(c.left + 54*s, c.top + 35*s),
+                                    right - c.left - 54*s, theme.text_secondary);
+        button(lay.pack_speed_button, pack_text::SpeedTestButton(vm), PackAction::SpeedTest,
+               fluent::ButtonKind::Standard, !pack_text::SpeedTestRunning(vm));
+        const auto& list = lay.pack_speed_list;
+        painter_.StrokeRoundedRect(D2D1::RectF(list.left + 0.5f, list.top + 0.5f, list.right - 0.5f, list.bottom - 0.5f),
+                                   6*s, theme.stroke_card, 1.0f);
+        const bool dark = theme.bg.r + theme.bg.g + theme.bg.b < 1.5f;
+        const D2D1_COLOR_F success = dark ? D2D1::ColorF(0x45D7A4) : D2D1::ColorF(0x107C5A);
+        const D2D1_COLOR_F failed = painter_.StatusToneColor(fluent::InfoBarKind::Error);
+        for (int i = 0; i < 3; ++i) {
+            const auto& r = lay.pack_speed_row[i];
+            if (i > 0) {
+                MakeBrush(dc, theme.stroke_divider, brStrokeDivider_);
+                FillRect(dc, brStrokeDivider_.get(), r.left + 1, r.top, r.right - r.left - 2, 1);
+            }
+            const int ms = vm.settings_pack_speed_ms[i];
+            const float mid = (r.top + r.bottom) * 0.5f;
+            const D2D1_RECT_F status = D2D1::RectF(r.right - 12*s - 120*s, mid - 10*s, r.right - 12*s, mid + 10*s);
+            painter_.DrawText(pack_text::SpeedRowStatus(ms), status, compositor_->SmallFormat(),
+                              ms >= 0 ? success : ms == -3 ? failed : theme.text_secondary,
+                              fluent::HorizontalAlignment::Right);
+            const D2D1_RECT_F bar = D2D1::RectF(status.left - 16*s - 90*s, mid - 2*s, status.left - 16*s, mid + 2*s);
+            if (bar.left > r.left + 140*s) {
+                painter_.FillRoundedRect(bar, 2*s, theme.stroke_divider);
+                if (ms >= 0) {
+                    // 320 ms about two thirds, 1.5 s under a third, 15 s a sliver.
+                    const float share = (std::clamp)(600.0f / (static_cast<float>(ms) + 600.0f), 0.06f, 0.95f);
+                    painter_.FillRoundedRect(D2D1::RectF(bar.left, bar.top, bar.left + (bar.right - bar.left) * share,
+                                                         bar.bottom), 2*s, success);
+                }
+            }
+            const float name_right = (bar.left > r.left + 140*s ? bar.left : status.left) - 12*s;
+            painter_.DrawText(pack_text::SpeedRowName(vm, i), D2D1::RectF(r.left + 12*s, mid - 10*s, name_right, mid + 10*s),
+                              compositor_->SmallFormat(), theme.text);
+        }
+    }
 
     painter_.DrawWrappedCaption(pack_text::Note(), D2D1::Point2F(lay.pack_note.left + 4*s, lay.pack_note.top),
                                 lay.pack_note.right - lay.pack_note.left - 8*s, theme.text_secondary);
