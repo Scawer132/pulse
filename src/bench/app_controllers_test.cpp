@@ -2057,9 +2057,15 @@ int wmain(int argc, wchar_t** argv) {
         pulse::app::SettingsController::UiCallbacks callbacks;
         callbacks.apply_effects = [&](auto value) { effect = value; };
         settings.BindUi(prefs, context, index, network, std::move(callbacks));
+        settings.ToggleUi(82);
+        bool ok = Report("folder size toggle changes folder sizes only", !prefs.folder_size_auto &&
+            prefs.media_columns && !prefs.arrange_include_minimized);
+        settings.ToggleUi(82);
+        ok &= Report("folder sizes can be enabled again", prefs.folder_size_auto);
         settings.ToggleUi(80);
-        bool ok = Report("media toggle changes media columns only", !prefs.media_columns &&
-            !prefs.arrange_include_minimized && pulse::app::HasEffect(effect, pulse::app::SettingsEffect::ListStyle));
+        ok &= Report("media toggle changes media columns only", !prefs.media_columns &&
+            prefs.folder_size_auto && !prefs.arrange_include_minimized &&
+            pulse::app::HasEffect(effect, pulse::app::SettingsEffect::ListStyle));
         settings.ToggleUi(81);
         ok &= Report("arrange minimized has independent toggle", prefs.arrange_include_minimized && !prefs.media_columns);
         settings.ToggleUi(80);

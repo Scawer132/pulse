@@ -1356,8 +1356,15 @@ void SettingsController::ToggleUi(int index) {
         return;
     }
     if (index == 80) {
+        // 媒体文件夹专用列 (upstream row): the list rebuilds its media cells.
+        prefs_->media_columns = !prefs_->media_columns;
+        SaveAndApply(SettingsEffect::ListStyle);
+        return;
+    }
+    if (index == 82) {
         // 文件夹大小: the list cells, hover preview and details panel all
-        // gate on it; same no-effect flip as the toolbar command.
+        // gate on it; same no-effect flip as the toolbar command. 82 because
+        // 80 belongs to the media-columns row above.
         prefs_->folder_size_auto = !prefs_->folder_size_auto;
         SaveAndApply(SettingsEffect::None);
         return;
@@ -1422,9 +1429,6 @@ void SettingsController::ToggleUi(int index) {
         SaveAndApply(SettingsEffect::ListStyle);
     } else if (index == 34) {
         prefs_->list_thumbnail_badges = !prefs_->list_thumbnail_badges;
-        SaveAndApply(SettingsEffect::ListStyle);
-    } else if (index == 80) {
-        prefs_->media_columns = !prefs_->media_columns;
         SaveAndApply(SettingsEffect::ListStyle);
     } else if (index == 36) {
         prefs_->menu_acrylic = !prefs_->menu_acrylic;
