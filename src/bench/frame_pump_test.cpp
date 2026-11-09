@@ -346,7 +346,13 @@ int wmain(int argc, wchar_t** argv) {
         }
         const double per_frame = (NowMsExact() - t0) / std::max(1, frames);
         std::wprintf(L"[INFO] morph bookkeeping: %.3f ms per frame for 600 items\n", per_frame);
+#if defined(__SANITIZE_ADDRESS__)
+        // ASan instrumentation multiplies the per-frame bookkeeping cost; keep a
+        // loose bound so sanitizer runs still catch algorithmic regressions.
+        Check(per_frame < 10.0, L"morph bookkeeping stays well under 10 ms per frame (ASan)");
+#else
         Check(per_frame < 1.0, L"morph bookkeeping stays well under 1 ms per frame");
+#endif
     }
 
     // Baseline for comparison: the 16 ms UI timer the pump replaces for motion.
