@@ -824,6 +824,7 @@ struct DetailsHitRects {
     D2D1_RECT_F open{}, new_tab{}, copy_path{}, more{}, star{}, rename{};
     D2D1_RECT_F tag_add{}, preview{}, preview_toggle{}, preview_enable{};
     D2D1_RECT_F size_calc{};        // 计算大小 on the size row (folder sizes off)
+    D2D1_RECT_F cloud_download{};   // 下载并预览 in the well of a cloud-only file
     D2D1_RECT_F attr_readonly{}, attr_hidden{}, attr_advanced{};
     D2D1_RECT_F security_change{};
     std::vector<D2D1_RECT_F> preset_chips;

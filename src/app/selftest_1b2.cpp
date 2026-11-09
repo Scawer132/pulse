@@ -9610,9 +9610,8 @@ void TestDetailsPreviewInteraction() {
     }
 
     // 启用预览 › 详情面板预览 off: the well keeps its band (and the file-type icon
-    // drawn there) but offers nothing that would read the file. The content
-    // itself (including a cloud file's download button) belongs to the embedded
-    // preview host, which this state does not start at all.
+    // drawn there) but offers nothing that would read the file, including the
+    // download-and-preview button a cloud-only file shows by default.
     {
         ui::MainRenderer renderer;
         renderer.SetScale(1.0f);
@@ -9626,10 +9625,19 @@ void TestDetailsPreviewInteraction() {
         vm.details.has_selection = true;
         vm.details.multi_count = 1;
         vm.details.cloud_online = true;
+        auto cloud_reachable = [&] {
+            for (float yy = panel.top; yy < panel.bottom; yy += 4.0f)
+                for (float xx = panel.left + 20.0f; xx < panel.right - 10.0f; xx += 4.0f)
+                    if (renderer.HitTest(vm, window, xx, yy).region ==
+                        ui::HitTestResult::DetailsCloudDownload) return true;
+            return false;
+        };
+        const bool cloud_button = cloud_reachable();
         vm.details.preview_icon_only = true;
         const bool well_kept = renderer.HitTest(vm, window, panel_cx, panel.top + 20.0f).region ==
             ui::HitTestResult::DetailsPreview;
-        Check(well_kept, L"preview layout: icon-only keeps the well");
+        Check(cloud_button && well_kept && !cloud_reachable(),
+            L"preview layout: icon-only keeps the well and drops every content action in it");
     }
 
     wchar_t previous[32768]{};

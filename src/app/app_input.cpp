@@ -3229,6 +3229,10 @@ LRESULT HandleLButtonDown(AppState* s, HWND hwnd, UINT msg, WPARAM wParam, LPARA
             SetCapture(hwnd);
             return 0;
         }
+        if (hit.region == ui::HitTestResult::DetailsCloudDownload) {
+            StartCloudPreviewDownload(*s, vm.details.path, vm.details.size_value);
+            return 0;
+        }
         if (hit.region == ui::HitTestResult::DetailsPreviewEnable) {
             s->detailsPreviewEnabled = !s->detailsPreviewEnabled;
             s->detailsScroll = 0;
