@@ -3549,6 +3549,8 @@ LRESULT CALLBACK WndProcImpl(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             s->detailsDrive = std::move(result->meta.drive);
             s->detailsFileSystem = std::move(result->meta.file_system);
             s->detailsFreeSpace = std::move(result->meta.free_space);
+            s->detailsVolumeRoot = std::move(result->meta.volume_root);
+            s->detailsUsed = std::move(result->meta.used);
             InvalidateRect(hwnd, nullptr, FALSE);
         }
         delete result;

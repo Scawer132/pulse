@@ -1723,6 +1723,13 @@ void ClearTextWidthCache() {
     // 安全 更改 button would act on what is already open.
     inline bool DetailsCardShowsSection(int id) { return id == 0 || id == 4; }
 
+    // 包含: a folder states its file/folder count only when a size walk produced
+    // one; folder sizes are never worked out on their own, so most folders have
+    // no count to show and the row is left out of both layout and drawing.
+    inline bool DetailsShowsContains(const DetailsPanelView& d) {
+        return d.is_dir && !d.contains_text.empty();
+    }
+
     // Button row labels, shared between layout (width measurement) and drawing.
     constexpr pulse::l10n::StringId kDetailsButtonLabels[4] = {
         pulse::l10n::StringId::Open, pulse::l10n::StringId::OpenNewTab,
@@ -2056,7 +2063,7 @@ void ClearTextWidthCache() {
                 if ((d.collapsed_mask >> def.id) & 1u) { y += 6.0f * s; continue; }
                 switch (def.id) {
                 case 0: { // 基本信息
-                    const int rows = (d.is_dir ? 7 : 6) +
+                    const int rows = 6 + (DetailsShowsContains(d) ? 1 : 0) +
                                      static_cast<int>(d.preview_properties.size());
                     // 计算大小 on the 大小 row (位置 / 类型 / 大小), left
                     // edge on the value column like the facts above it; shown

@@ -71,6 +71,7 @@ void FetchPermissions(const std::wstring& shell_path, bool is_dir, DetailsMeta& 
 void FetchVolume(const std::wstring& shell_path, DetailsMeta& out) {
     wchar_t root[MAX_PATH]{};
     if (!GetVolumePathNameW(shell_path.c_str(), root, ARRAYSIZE(root))) return;
+    out.volume_root = pulse::path::TrimTrailingSeparators(root);
     wchar_t volume_name[MAX_PATH]{}, fs_name[MAX_PATH]{};
     if (GetVolumeInformationW(root, volume_name, ARRAYSIZE(volume_name), nullptr,
                               nullptr, nullptr, fs_name, ARRAYSIZE(fs_name))) {
@@ -82,13 +83,17 @@ void FetchVolume(const std::wstring& shell_path, DetailsMeta& out) {
     }
     ULARGE_INTEGER free_avail{}, total{};
     if (GetDiskFreeSpaceExW(root, &free_avail, &total, nullptr) && total.QuadPart > 0) {
-        const uint64_t pct = free_avail.QuadPart * 100 / total.QuadPart;
+        const uint64_t free = free_avail.QuadPart < total.QuadPart ? free_avail.QuadPart
+                                                                  : total.QuadPart;
+        const uint64_t pct = free * 100 / total.QuadPart;
         wchar_t text[96];
         swprintf_s(text, L"%s / %s (%llu%%)",
-                   pulse::format::ByteSize(free_avail.QuadPart).c_str(),
+                   pulse::format::ByteSize(free).c_str(),
                    pulse::format::ByteSize(total.QuadPart).c_str(),
                    static_cast<unsigned long long>(pct));
         out.free_space = text;
+        out.used = pulse::l10n::Get(pulse::l10n::StringId::Used_2) + L" " +
+                   pulse::format::ByteSize(total.QuadPart - free);
     }
 }
 

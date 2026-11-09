@@ -8696,6 +8696,23 @@ void TestDetailsMeta() {
     Check(FormatAccessMask(FILE_GENERIC_WRITE, false) == L"写入", L"meta: mask write only");
     Check(FormatAccessMask(DELETE, false) == L"删除", L"meta: mask delete only");
     Check(FormatAccessMask(0, false) == L"特殊权限", L"meta: mask empty");
+
+    // A volume root names its volume and carries 已用; a folder inside it names
+    // the same volume, which is what the details panel compares to decide
+    // between the volume's used space and a plain folder.
+    const auto root_meta = FetchDetailsMeta(L"C:\\");
+    Check(root_meta.volume_root == L"C:", L"meta: a drive root reports its volume root");
+    Check(root_meta.used.starts_with(l10n::Get(l10n::StringId::Used_2)),
+          L"meta: a volume root carries 已用");
+    const auto inside_meta = FetchDetailsMeta(L"C:\\Windows");
+    Check(inside_meta.volume_root == L"C:",
+          L"meta: a folder reports the volume root it lives on");
+    Check(DetailsPathIsVolumeRoot(L"C:\\", L"C:"),
+          L"meta: a drive root is its volume's root");
+    Check(DetailsPathIsVolumeRoot(L"\\\\?\\C:\\", L"C:"),
+          L"meta: the \\\\?\\ spelling is the same volume root");
+    Check(!DetailsPathIsVolumeRoot(L"C:\\Windows", L"C:"),
+          L"meta: a folder inside the volume is not its root");
 }
 
 void TestMoveTabRun() {
@@ -9767,6 +9784,11 @@ bool RunDetailsPanelScrollTest() {
         vm = BuildVm(*state);
         Check(vm.details.has_selection && vm.details.path == L"pulse:test-drive",
             L"details scroll: the selected drive is the panel's subject");
+        // 文件夹大小 off: the blue 计算大小 text is what the size row shows; a dash
+        // drawn under it reads as two values at once.
+        Check(vm.details.size_manual && vm.details.size_text.empty() &&
+                  !vm.details.size_pending,
+              L"details panel: 计算大小 replaces the size row, without a dash");
         state->detailsScroll = 240.0f;
         vm = BuildVm(*state);
         Check(std::fabs(vm.details.scroll_y - 240.0f) < 0.01f,
@@ -9856,6 +9878,14 @@ int RunSelfTest1B2() {
         const bool passed = RunDetailsInfoCardTest();
         if (g_log) { fclose(g_log); g_log = nullptr; }
         return passed ? 0 : 1;
+    }
+    if (GetEnvironmentVariableW(L"PULSE_SELFTEST_CASE", details_card_case,
+                                ARRAYSIZE(details_card_case)) &&
+        wcscmp(details_card_case, L"details-meta") == 0) {
+        TestDetailsMeta();
+        LogLine(L"\n== details-meta: %d passed, %d failed ==\n", g_pass, g_fail);
+        if (g_log) { fclose(g_log); g_log = nullptr; }
+        return g_fail ? 1 : 0;
     }
     if (GetEnvironmentVariableW(L"PULSE_SELFTEST_CASE", details_card_case,
                                 ARRAYSIZE(details_card_case)) &&

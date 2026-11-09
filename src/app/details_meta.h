@@ -12,6 +12,8 @@ struct DetailsMeta {
     std::wstring drive;        // 驱动器 "Data (D:)"
     std::wstring file_system;  // 文件系统 "NTFS"
     std::wstring free_space;   // 可用空间 "256 GB / 500 GB (51%)"
+    std::wstring volume_root;  // "C:\": the volume's root, as Windows names it
+    std::wstring used;         // 已用 "136.1 GB" (total - free)
 };
 
 DetailsMeta FetchDetailsMeta(const std::wstring& path);

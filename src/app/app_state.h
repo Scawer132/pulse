@@ -1001,6 +1001,8 @@ struct AppState : AppCoreOwner {
     std::wstring detailsMetaPath;
     std::wstring detailsOwner, detailsPermissions;
     std::wstring detailsDrive, detailsFileSystem, detailsFreeSpace;
+    std::wstring detailsVolumeRoot; // "C:\" of the volume holding detailsMetaPath
+    std::wstring detailsUsed;       // 已用 "136.1 GB" of that volume
     // Folder size walk (background; cancelled and restarted on selection change).
     std::mutex detailsSizeMutex;
     std::condition_variable detailsSizeCv;

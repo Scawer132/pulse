@@ -3337,7 +3337,7 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
     // Right details panel: selection info + size walk + tag chips.
     vm.details_visible = s.showDetailsPanel;
     vm.layout_preset = static_cast<int>(LayoutOf(s));
-    std::wstring sizeTarget; // folder that should be walking ("" = none)
+    std::wstring volumeUsed; // 已用 of the subject's volume, when the subject is its root
     if (s.showDetailsPanel) {
         ui::DetailsPanelView& dv = vm.details;
         // 启用预览 › 详情面板预览: the gate decides whether the well reads the
@@ -3442,6 +3442,8 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
                 s.detailsDrive.clear();
                 s.detailsFileSystem.clear();
                 s.detailsFreeSpace.clear();
+                s.detailsVolumeRoot.clear();
+                s.detailsUsed.clear();
                 if (!fs::IsVirtualPath(dv.path))
                     PrefetchDetailsMeta(s.hwnd, dv.path);
             }
@@ -3470,6 +3472,11 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
                 dv.drive_text = s.detailsDrive;
                 dv.fs_text = s.detailsFileSystem;
                 dv.free_space_text = s.detailsFreeSpace;
+                // A volume root speaks for a disk: 已用 comes from the volume, not
+                // from walking every file under it.
+                if (dv.is_dir && !s.detailsUsed.empty() &&
+                    app::DetailsPathIsVolumeRoot(dv.path, s.detailsVolumeRoot))
+                    volumeUsed = s.detailsUsed;
             }
             s.renderer.CachedPreviewProperties(dv.path, dv.modified_value, dv.size_value,
                                                dv.preview_properties);
@@ -3485,8 +3492,6 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
                     dv.preset_tags.push_back(std::move(chip));
                 }
             }
-            // 文件夹大小 off: the size row offers 计算大小 instead of walking.
-            if (dv.is_dir && s.appPrefs.folder_size_auto) sizeTarget = dv.path;
         }
         // The panel keeps one scroll position per subject. Clearing the
         // selection, leaving a folder card or switching folders starts the new
@@ -3511,10 +3516,19 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
         std::lock_guard<std::mutex> lock(s.detailsSizeMutex);
         requestedSizePath = s.detailsSizeRequested;
     }
-    if (!sizeTarget.empty()) {
-        if (requestedSizePath != sizeTarget) StartDetailsSizeWalk(s, sizeTarget);
+    // A folder's size is never worked out on its own: the row shows the volume's
+    // 已用 for a disk root, and otherwise only a 计算大小 the user asked for.
+    const bool walking = vm.details.is_dir && !requestedSizePath.empty() &&
+                         requestedSizePath == vm.details.path;
+    // A walk belongs to the folder that asked for it; leaving that subject ends
+    // it, and a disk reports its volume instead of a walk.
+    if (!requestedSizePath.empty() && !(walking && volumeUsed.empty()))
+        StopDetailsSizeWalk(s);
+    if (!volumeUsed.empty()) {
+        vm.details.size_text = volumeUsed;
+    } else if (walking) {
         std::lock_guard<std::mutex> lock(s.detailsSizeMutex);
-        if (s.detailsSize.done && s.detailsSize.path == sizeTarget) {
+        if (s.detailsSize.done && s.detailsSize.path == requestedSizePath) {
             vm.details.size_text = pulse::format::ByteSize(s.detailsSize.size, true);
             wchar_t contains[96];
             swprintf_s(contains, l10n::Get(l10n::StringId::ContainsFormat).c_str(),
@@ -3529,23 +3543,15 @@ ui::WindowViewModel BuildVm(AppState& s, bool probe_details) {
             vm.details.size_pending = true;
         }
     } else if (vm.details.is_dir && !s.appPrefs.folder_size_auto && !vm.details.path.empty()) {
-        // 文件夹大小 off: show a finished walk, the walk in progress, or the
-        // 计算大小 button; a running walk is left alone until it settles.
-        std::lock_guard<std::mutex> lock(s.detailsSizeMutex);
-        if (s.detailsSize.done && s.detailsSize.path == vm.details.path) {
-            vm.details.size_text = pulse::format::ByteSize(s.detailsSize.size, true);
-            wchar_t contains[96];
-            swprintf_s(contains, l10n::Get(l10n::StringId::ContainsFormat).c_str(),
-                       s.detailsSize.files, s.detailsSize.dirs);
-            vm.details.contains_text = contains;
-        } else if (s.detailsSizeRequested == vm.details.path) {
-            vm.details.size_pending = true;
-        } else {
-            vm.details.size_manual = true;
-        }
-    } else if (!requestedSizePath.empty()) {
-        StopDetailsSizeWalk(s);
+        // 文件夹大小 off: the size row offers 计算大小. Nothing walks on its own,
+        // and a finished walk for this folder was shown by the branch above.
+        vm.details.size_manual = true;
     }
+    // A dash says "no value": it must not sit under the 计算大小 text, which is
+    // the row's content while the button is offered.
+    if (vm.details.is_dir && vm.details.size_text.empty() && !vm.details.size_pending &&
+        !vm.details.size_manual)
+        vm.details.size_text = L"\u2014";
     vm.tray_drop = s.dropTray;
     vm.drag_badge = s.dropBadge;
     vm.drag_badge_x = s.dropBadgeX;

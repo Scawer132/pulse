@@ -1,6 +1,7 @@
 // details_info.cpp — see details_info.h.
 #include "details_info.h"
 #include "../common/localization.h"
+#include "../common/path_utils.h"
 #include "../common/text_format.h"
 #include "../fs/fs_enum.h"
 #include "system_info.h"
@@ -46,6 +47,13 @@ std::wstring CoresText(const SystemFacts& facts) {
 
 bool DetailsInfoAppliesTo(const std::wstring& path) {
     return !path.empty() && !fs::IsVirtualPath(path);
+}
+
+bool DetailsPathIsVolumeRoot(const std::wstring& path, const std::wstring& volume_root) {
+    if (path.empty() || volume_root.empty()) return false;
+    return path::EqualInsensitive(
+        path::TrimTrailingSeparators(path::StripExtendedPathPrefix(path)),
+        path::TrimTrailingSeparators(volume_root));
 }
 
 void FillDetailsInfo(const DetailsInfoInput& input, ui::DetailsPanelView& view) {

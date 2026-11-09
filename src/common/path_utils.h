@@ -38,4 +38,12 @@ inline std::wstring StripExtendedPathPrefix(std::wstring_view p) {
     return std::wstring(p);
 }
 
+// "C:\" -> "C:", "\\server\share\" -> "\\server\share": one spelling for the
+// same folder whether a separator trails it or not (volume roots come back
+// with one from GetVolumePathNameW).
+inline std::wstring TrimTrailingSeparators(std::wstring p) {
+    while (p.size() > 1 && p.back() == L'\\') p.pop_back();
+    return p;
+}
+
 } // namespace pulse::path
