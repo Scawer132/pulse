@@ -955,8 +955,9 @@ void MainRenderer::DrawDriveOverview(const PaneViewModel& pane, const D2D1_RECT_
     IDWriteTextFormat* small_fmt = compositor_->SmallFormat();
     IDWriteTextFormat* title_fmt = NameSemiboldFormat();
     if (!factory || !small_fmt || !title_fmt) return;
+    // Transparent background: the pane card shows through, only the border
+    // and the content paint.
     const float radius = 8.0f * scale_;
-    painter_.FillRoundedRect(card, radius, theme.surface_card);
     painter_.StrokeRoundedRect(card, radius, theme.stroke_card);
     const float left = card.left + 16.0f * scale_;
     const float right = card.right - 16.0f * scale_;
