@@ -11,7 +11,7 @@
 | 做扩展 / 原生面板 | [extensions-sdk-quickstart.md](extensions-sdk-quickstart.md)、[sdk/native/README.md](../sdk/native/README.md) |
 | 接 MCP / AI 应用 | [ai-pack.md](ai-pack.md)、[ai/mcp.md](ai/mcp.md) |
 | 查诊断日志、崩溃、性能 | [diagnostics.md](diagnostics.md)、[PERFORMANCE_ROADMAP.md](PERFORMANCE_ROADMAP.md) |
-| 看本地设计计划（栈安全等） | [design/stack-safety-plan.md](design/stack-safety-plan.md) |
+| 看本地设计计划（栈安全等） | [design/stack-safety-plan.md](design/stack-safety-plan.md)、[design/memory-attribution-plan-20261110.md](design/memory-attribution-plan-20261110.md) |
 | 看历史设计与交付记录 | [archive/](archive/)、按主题命名的 `*-2026-*.md` |
 
 ## 分类约定（只约束新增与本地文档）
