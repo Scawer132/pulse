@@ -45,13 +45,22 @@
 
 ### 3.2 符号化
 
-输出 `模块名+0xRVA` 与本模块绝对地址，离线用 `build\pulse.pdb` 解析：
+本仓库的默认构建**不产生 PDB**（`CMakeLists.txt` 只给 payload target 加了 `/Z7`），但链接带 `/MAP`，所以 `build\pulse.map` 里有全部符号名与段内偏移（本次构建 48 MB）。把返回地址换算成「段 + 偏移」后查表即可得到函数名：
 
 ```powershell
+# RVA = 返回地址 - 模块基址；.map 里按段起始 + 偏移定位到最近的小于等于项
+$lines = Select-String -Path build\pulse.map -Pattern '^ 0001:[0-9A-F]{8}\s+\w'
+```
+
+需要行号、内联帧或模板实例级的区分时，另配一份带调试信息的构建（不改现有 `build`）：
+
+```powershell
+cmake -S . -B build-sym -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-sym --target pulse
 & 'D:\Windows Kits\10\Debuggers\x64\cdb.exe' -z <dump> -c "ln <模块基址>+<rva>; q"
 ```
 
-或在探针里用 `dbghelp!SymFromAddr`（PDB 就在 exe 旁边）直接输出函数名。优先用后者，避免二次流程；只把无法解析的行退回 cdb。
+优先用 `.map`（零额外构建、函数粒度够用），只在无法区分同函数内多个调用点时退到 `build-sym` 的 PDB。
 
 ### 3.3 采样场景
 
