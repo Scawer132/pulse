@@ -2,7 +2,7 @@
 """Reject new fixed-size arrays of 8 KB or more in the UI modules.
 
 A 64 KB stack buffer is what turned a deep message chain into a stack overflow
-(see docs/stack-safety-plan.md): every nested message already holds a whole
+(see docs/design/stack-safety-plan.md): every nested message already holds a whole
 WndProcImpl frame, so a large local array is what finally pushes it over. The
 existing buffers stay as they are; this check only looks at lines a change
 adds, so old code needs no annotation.
