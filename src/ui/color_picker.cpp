@@ -114,9 +114,9 @@ std::wstring FormatHexColor(uint32_t argb, bool with_alpha) {
 namespace {
 
 // d2d1.lib does not export the effect CLSIDs; define the shadow one locally
-// (CLSID_D2D1Shadow from d2d1effects.h), same as fluent_menu.cpp.
+// (CLSID_D2D1Shadow from d2d1effects.h).
 constexpr GUID kShadowEffectClsid = { 0xC67EA361, 0x1863, 0x4e69,
-    { 0x89, 0xDB, 0x69, 0x5D, 0x3E, 0x9D, 0x5B, 0x53 } };
+    { 0x89, 0xDB, 0x69, 0x5D, 0x3E, 0x9A, 0x5B, 0x6B } };
 
 constexpr wchar_t kClassName[] = L"PulseFluentColorPicker";
 
