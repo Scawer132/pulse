@@ -168,6 +168,16 @@ int wmain(int argc, wchar_t** argv) {
         Check(!animations || plate.Active(1030), L"hover glide is active mid-flight");
         Check(!plate.Active(1016 + 100 + motion::kSettleGraceMs),
               L"abandoned hover glide stops asking for frames after its duration");
+        // A retarget that arrives while a glide is in flight means the pointer
+        // is still moving: the plate follows it at once instead of restarting
+        // a glide per row (a sweep across a list otherwise animates for ever).
+        motion::RectMotion swept;
+        const D2D1_RECT_F row_c = D2D1::RectF(0, 80, 100, 100);
+        swept.Update(1, 1, row_a, 1, 1000, 100);
+        swept.Update(1, 2, row_b, 2, 1016, 100);       // glide A -> B starts
+        const D2D1_RECT_F followed = swept.Update(1, 3, row_c, 3, 1030, 100);
+        Check(followed.top == row_c.top && followed.bottom == row_c.bottom &&
+              !swept.Active(1031), L"a plate retargeted mid-glide keeps up with the pointer");
         motion::RectMotion fresh;
         Check(!fresh.Active(0) && !fresh.Active(123456), L"idle motion never asks for frames");
         motion::ListShiftMotion shift;

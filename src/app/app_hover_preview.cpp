@@ -8,6 +8,7 @@
 #include "app_preview_policy.h"
 #include "app_details_tree.h"
 #include "entry_sort.h"
+#include "partial_redraw.h"
 #include "../common/localization.h"
 #include "../common/text_format.h"
 #include "../common/preview_extensions.h"
@@ -430,12 +431,23 @@ void SetFrameTimer(AppState& s, UINT ms) {
     else KillTimer(s.hwnd, kTimerHoverPreviewFrame);
 }
 
+// The dwell line lives inside one row: repaint that row, or the window when
+// the last frame did not record where it went.
+void InvalidateDwellRow(AppState& s, int pane, int row) {
+    D2D1_RECT_F damage{};
+    if (s.renderer.HoverRowDamage(pane, row, row, &damage))
+        app::InvalidatePartial(s.hwnd, app::DamagePixels(damage));
+    else
+        InvalidateRect(s.hwnd, nullptr, FALSE);
+}
+
 void ClearDwell(AppState& s) {
     auto& card = s.hoverPreview;
     if (card.dwell_row < 0) return;
+    const int row = card.dwell_row, pane = card.dwell_pane;
     card.dwell_row = card.dwell_pane = -1;
     card.dwell_start = 0;
-    if (s.hwnd) InvalidateRect(s.hwnd, nullptr, FALSE);
+    if (s.hwnd) InvalidateDwellRow(s, pane, row);
 }
 
 // Starts the dwell for the hovered row: the chosen delay, or a short one
@@ -475,7 +487,7 @@ void Arm(AppState& s) {
     card.dwell_start = now;
     card.dwell_ms = static_cast<UINT>(delay);
     SetFrameTimer(s, 16);
-    InvalidateRect(s.hwnd, nullptr, FALSE);
+    InvalidateDwellRow(s, s.hoverPaneIndex, s.hoverRow);
 }
 
 // The settled row's preview goes into the card's cache ahead of the card.
@@ -594,8 +606,14 @@ bool HoverPreviewMessage(AppState& s, HWND hwnd, UINT msg, WPARAM wparam, LPARAM
     switch (msg) {
     case WM_TIMER:
         if (wparam == kTimerHoverPreviewFrame) {
-            if (!card.visible && card.dwell_row < 0) SetFrameTimer(s, 0);
-            else InvalidateRect(hwnd, nullptr, FALSE);
+            if (!card.visible && card.dwell_row < 0) { SetFrameTimer(s, 0); return true; }
+            // Only the card and the dwell line move at this rate: repaint just
+            // where they are, never the whole window.
+            const D2D1_RECT_F region = s.renderer.HoverOverlayBounds();
+            if (region.right > region.left)
+                app::InvalidatePartial(hwnd, app::DamagePixels(region));
+            else
+                InvalidateRect(hwnd, nullptr, FALSE);
             return true;
         }
         if (wparam == kTimerHoverPrefetch) {

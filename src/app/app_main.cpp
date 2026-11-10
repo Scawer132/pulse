@@ -333,10 +333,11 @@ static int g_shot_favorites_focus = -1;
 // Decorative motion (loading shimmer, folder size skeleton, the pill's ring)
 // runs at about 30 fps instead of the display rate (FramePump::ArmPaced).
 constexpr double kDecorativeFrameMs = 1000.0 / 30.0;
-// Hover plates gliding alone are a highlight moving over a few rows: 60 fps
-// looks the same as the display rate and costs a fraction of the frames a
-// 144 Hz panel would otherwise wake the window for.
-constexpr double kHoverPlateFrameMs = 1000.0 / 60.0;
+// Hover plates gliding alone are a highlight moving over a few rows. They ride
+// the partial path (a few rows repainted), so the pace is what bounds the cost
+// of a sweep: 45 fps keeps the glide smooth without waking the window on every
+// frame a 144 Hz panel would otherwise ask for.
+constexpr double kHoverPlateFrameMs = 1000.0 / 45.0;
 // While the window is cloaked (another virtual desktop, a shell cloak) frames
 // stop; this polls for the uncloak, then repaints once to pick motion up.
 constexpr UINT_PTR kTimerCloakPoll = 0x434C;  // 'CL'
@@ -679,15 +680,26 @@ void Render(AppState& s) {
     const auto hover_model_end = std::chrono::steady_clock::now();
     if (hover_card.visible) vm.tooltip_text.clear();  // the card already names the file
     // Partial redraw: only a quiet window repaints just the damage; anything
-    // floating or moving besides the hover plates makes it a whole frame.
+    // floating or moving besides the hover plates makes it a whole frame. The
+    // hover card and its dwell line are no exception: a partial frame repaints
+    // them too, over the bounds they had in the last frame. A card that has not
+    // been drawn yet (its first frame) is still a whole frame.
+    const D2D1_RECT_F hover_overlay = s.renderer.HoverOverlayBounds();
+    const bool hover_overlay_known = hover_overlay.right > hover_overlay.left;
     RECT damage_px{};
-    bool partial = explorer_frame.empty() && t_paint_damage && !app_motion && s.compositor.CanPresentPartial() && !s.shot.active &&
-                   !hover_card.visible && !hover_card.dwell && !s.themeReveal.start &&
-                   s.renameIndex < 0 && !s.notification_toast.IsVisible() &&
+    bool partial = explorer_frame.empty() && t_paint_damage && !app_motion && s.compositor.CanPresentPartial() &&
+                   !s.shot.active && (!(hover_card.visible || hover_card.dwell) || hover_overlay_known) &&
+                   !s.themeReveal.start && s.renameIndex < 0 && !s.notification_toast.IsVisible() &&
                    s.renderer.PartialRedrawSafe(vm);
     if (partial) {
         RECT client{0, 0, s.compositor.Width(), s.compositor.Height()};
         partial = IntersectRect(&damage_px, t_paint_damage, &client) && !EqualRect(&damage_px, &client);
+        if (partial && hover_overlay_known) {
+            RECT overlay = app::DamagePixels(hover_overlay);
+            RECT both{};
+            UnionRect(&both, &damage_px, &overlay);
+            partial = IntersectRect(&damage_px, &both, &client) && !EqualRect(&damage_px, &client);
+        }
     }
     const D2D1_RECT_F damage = D2D1::RectF(static_cast<float>(damage_px.left), static_cast<float>(damage_px.top),
                                            static_cast<float>(damage_px.right), static_cast<float>(damage_px.bottom));

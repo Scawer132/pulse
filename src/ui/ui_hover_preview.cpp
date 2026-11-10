@@ -245,6 +245,7 @@ void MainRenderer::DrawHoverPreview(const HoverPreviewView& view, const D2D1_REC
     hover_cache_.BeginFrame();
     hover_card_rect_ = D2D1_RECT_F{};
     hover_list_rect_ = D2D1_RECT_F{};
+    hover_dwell_rect_ = D2D1_RECT_F{};
     hover_scroll_max_ = 0.0f;
     ID2D1DeviceContext* dc = compositor_->Dc();
     const float s = scale_;
@@ -256,6 +257,7 @@ void MainRenderer::DrawHoverPreview(const HoverPreviewView& view, const D2D1_REC
         if (view.dwell && view.dwell_row.right - view.dwell_row.left > 24.0f * s) {
             const SnackPalette palette = MakeSnackPalette(theme, high_contrast);
             ComPtr<ID2D1SolidColorBrush> line;
+            hover_dwell_rect_ = view.dwell_row;  // the line lives inside this row
             if (SUCCEEDED(dc->CreateSolidColorBrush(palette.accent, &line)) && line.get()) {
                 const D2D1_RECT_F row = view.dwell_row;
                 const float left = row.left + 6.0f * s, right = row.right - 6.0f * s;

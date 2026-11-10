@@ -1201,16 +1201,37 @@ void UnionInto(D2D1_RECT_F& r, bool& any, const D2D1_RECT_F& a) {
 }
 } // namespace
 
-bool MainRenderer::OverlayUp(const WindowViewModel& vm) const {
-    // Everything the tail of Render floats over the window, and the hover card.
+bool MainRenderer::OverlayUpExceptHover(const WindowViewModel& vm) const {
+    // Everything the tail of Render floats over the window except the hover
+    // card and its dwell line, which a partial frame repaints itself.
     return vm.settings_open || vm.pane.marquee_active || vm.content_drop || vm.drag_ghost.on ||
            !vm.drag_badge.empty() || vm.change_popover.visible ||
            (vm.address_editing && !vm.address_suggestions.empty()) ||
            !vm.filter_tag_suggestions.empty() || vm.teach.visible || !vm.tooltip_text.empty() ||
            group_wheel_.Visible() || window_overview_.IsOpen() || window_switcher_.IsOpen() ||
            ai_panel_.FloatingVisible() ||
-           caret_due_ms_ != 0 || hover_frame_ms_ != 0 ||
-           hover_card_rect_.right > hover_card_rect_.left;
+           caret_due_ms_ != 0;
+}
+
+D2D1_RECT_F MainRenderer::HoverOverlayBounds() const noexcept {
+    D2D1_RECT_F r{};
+    bool any = false;
+    // The card's shadow and the acrylic sample around it reach past its own
+    // rectangle: sample margin 2*blur = 32 px at 100%, plus the shadow's own.
+    if (hover_card_rect_.right > hover_card_rect_.left &&
+        hover_card_rect_.bottom > hover_card_rect_.top) {
+        const float margin = 40.0f * scale_;
+        r = D2D1::RectF(hover_card_rect_.left - margin, hover_card_rect_.top - margin,
+                        hover_card_rect_.right + margin, hover_card_rect_.bottom + margin);
+        any = true;
+    }
+    if (hover_dwell_rect_.right > hover_dwell_rect_.left &&
+        hover_dwell_rect_.bottom > hover_dwell_rect_.top) {
+        const float m = 2.0f * scale_;
+        UnionInto(r, any, D2D1::RectF(hover_dwell_rect_.left - m, hover_dwell_rect_.top - m,
+                                      hover_dwell_rect_.right + m, hover_dwell_rect_.bottom + m));
+    }
+    return any ? r : D2D1_RECT_F{};
 }
 
 bool MainRenderer::NonHoverMotionActive() const {
@@ -1249,8 +1270,10 @@ std::vector<MainRenderer::PaintedSelection> MainRenderer::FrameSelections(const 
 bool MainRenderer::PartialRedrawSafe(const WindowViewModel& vm) const {
     // Hover damage does not cover rows deselected elsewhere in the pane.
     // Compare values captured for the previous frame, never the live set pointer.
+    // The hover card and its dwell line are not an obstacle: a partial frame's
+    // damage covers HoverOverlayBounds(), so they are redrawn with it.
     return painted_selections_ == FrameSelections(vm) &&
-        !last_frame_overlay_ && !OverlayUp(vm) && !NonHoverMotionActive();
+        !last_frame_overlay_ && !OverlayUpExceptHover(vm) && !NonHoverMotionActive();
 }
 
 bool MainRenderer::HoverRowDamage(int pane_index, int old_source, int new_source,
@@ -1320,7 +1343,7 @@ void MainRenderer::Render(const WindowViewModel& vm, const D2D1_RECT_F& rect,
     PULSE_SCENE_MARK("scene_enter");
     ++motion_frame_;
     asst_drawn_ = false;   // DrawSettingsAssistant sets it again
-    last_frame_overlay_ = OverlayUp(vm);
+    last_frame_overlay_ = OverlayUpExceptHover(vm);
     painted_selections_ = FrameSelections(vm);
     thumbnail_cache_.AdvanceFrame(notify_hwnd_);
     folder_thumbnail_cache_.BeginFrame();

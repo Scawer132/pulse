@@ -73,7 +73,11 @@ public:
         if (!continuous) {
             Snap(target);
         } else if (key != key_) {
-            if (SystemAnimationsEnabled() && duration_ms > 0) {
+            // A new target while the previous glide is still in flight means
+            // the pointer is on the move: follow it at once instead of
+            // restarting a fresh glide for every row. A plate that rests on
+            // one row and then moves to another still glides.
+            if (SystemAnimationsEnabled() && duration_ms > 0 && settled_) {
                 from_ = current_;
                 to_ = target;
                 start_ = now;

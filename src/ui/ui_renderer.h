@@ -72,6 +72,12 @@ public:
     // The card drawn last, client px (empty when none): the pointer on a
     // folder card keeps it (app_hover.cpp). Its list and how far that scrolls.
     D2D1_RECT_F HoverCardRect() const noexcept { return hover_card_rect_; }
+    // Everywhere the hover card and its dwell line were drawn last frame,
+    // shadow included (empty when neither is up). A partial frame repaints
+    // this on top of its own damage: the card floats over the list, so the
+    // pixels under and of it must be redrawn whenever a frame is partial and
+    // the card is showing.
+    D2D1_RECT_F HoverOverlayBounds() const noexcept;
     D2D1_RECT_F HoverFolderListRect() const noexcept { return hover_list_rect_; }
     float HoverFolderScrollMax() const noexcept { return hover_scroll_max_; }
     float HoverFolderRowHeight() const noexcept { return 26.0f * scale_; }
@@ -1395,7 +1401,9 @@ private:
     // HoverRowDamage reads it to tell whether a hover change moves the
     // highlighted guide (the hovered row's folder).
     std::array<std::shared_ptr<const DetailsTreeRows>, 8> drawn_tree_{};
-    bool OverlayUp(const WindowViewModel& vm) const;
+    // OverlayUp without the hover card and its dwell line: those ride a
+    // partial frame whose damage HoverOverlayBounds covers.
+    bool OverlayUpExceptHover(const WindowViewModel& vm) const;
     bool NonHoverMotionActive() const;
     mutable std::vector<D2D1_RECT_F> landing_rects_;   // this frame's landing rows (window px)
     void RequestMotionFrame(const std::source_location& location = std::source_location::current()) const {
@@ -1557,7 +1565,7 @@ private:
     // A folder's card (ui_hover_preview.cpp), and where the last card went.
     void DrawHoverFolderCard(const HoverPreviewView& view, const D2D1_RECT_F& client,
                              const Theme& theme, bool high_contrast);
-    D2D1_RECT_F hover_card_rect_{}, hover_list_rect_{};
+    D2D1_RECT_F hover_card_rect_{}, hover_list_rect_{}, hover_dwell_rect_{};
     float hover_scroll_max_ = 0.0f;
     std::unordered_map<int, ComPtr<IDWriteTextFormat>> sized_icon_formats_;
     ComPtr<ID2D1DeviceContext5> empty_state_svg_dc_;
