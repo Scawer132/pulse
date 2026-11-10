@@ -71,7 +71,7 @@ PULSE_SELFTEST_CASE=<case> .\build\pulse.exe --selftest
 
 | 模块 | 测试数 | 相关 target（前 6） |
 | --- | ---: | --- |
-| index | 73 | `pulse_search_audit_test`, `pulse_index_capacity_test`, `pulse_index_deep_path_test`, `pulse_index_delta_replay_test`†, `pulse_index_engine_test`†, `pulse_index_exclusion_concurrency_test` … +67 |
+| index | 74 | `pulse_search_audit_test`, `pulse_index_capacity_test`, `pulse_index_deep_path_test`, `pulse_index_delta_replay_test`†, `pulse_index_engine_test`†, `pulse_index_exclusion_concurrency_test` … +68 |
 | ops | 41 | `pulse_controlled_ops_test`, `pulse_delete_delivery_test`, `pulse_elevated_session_test`, `pulse_external_tasks_test`, `pulse_generated_output_test`, `pulse_ops_conflict_baseline_test` … +35 |
 | fs | 51 | `pulse_device_source_test`, `pulse_cloud_roots_test`, `pulse_listing_filter_perf_test`, `pulse_path_normalize_test`, `pulse_recycle_metadata_test`, `pulse_snapshot_store_test` … +45 |
 | ipc | 71 | `pulse_file_dialog_remote_multiselect_live_test`, `pulse_legacy_adapter_test`, `pulse_legacy_ansi_adapter_test`, `pulse_legacy_ansi_utf8_test`, `pulse_picker_host_test`, `pulse_file_dialog_activation_ex_test` … +65 |

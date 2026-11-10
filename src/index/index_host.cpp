@@ -8,6 +8,7 @@
 //   Pulse.Index.exe --install    UAC once; creates AUTO_START service
 //   Pulse.Index.exe --uninstall  removes the service
 #include "index_protocol.h"
+#include "index_payload.h"
 #include "../ipc/deadline_pipe.h"
 #include "index_directory_security.h"
 #include "index_engine.h"
@@ -280,14 +281,17 @@ bool WriteFrame(Client& c, uint32_t type, uint32_t id, const std::vector<uint8_t
 }
 
 std::vector<uint8_t> StatusPayload() {
-    PayloadWriter w;
-    w.PutU32(g.engine.Ready() ? 1u : 0u);
-    w.PutU32(static_cast<uint32_t>((std::min)(g.engine.Count(), static_cast<size_t>(0xffffffffu))));
-    w.PutString(g.engine.Status());
-    w.PutU32(g.engine.PinyinReady() ? 1u : 0u);
-    w.PutU64(g.engine.Revision()); w.PutU32(1);
-    w.PutU32(kVolumePauseCapability);
-    return w.data();
+    wire::StatusWire status;
+    status.ready = g.engine.Ready() ? 1u : 0u;
+    status.count = static_cast<uint32_t>((std::min)(g.engine.Count(), static_cast<size_t>(0xffffffffu)));
+    status.text = g.engine.Status();
+    status.pinyin_ready = g.engine.PinyinReady() ? 1u : 0u;
+    // Live search needs the revision pair; volume pause needs the capability.
+    status.revision_present = true;
+    status.revision = g.engine.Revision(); status.revision_version = 1;
+    status.capability_present = true;
+    status.capability = kVolumePauseCapability;
+    return wire::WriteStatus(status);
 }
 
 void QueueSearch(std::shared_ptr<Client> c, uint32_t id, Query query, bool refresh = false);
@@ -309,83 +313,24 @@ void BroadcastStatus() {
 }
 
 std::vector<uint8_t> SearchPayload(const SearchResult& sr) {
-    PayloadWriter w;
-    w.PutU32(static_cast<uint32_t>((std::min)(sr.total, static_cast<size_t>(0xffffffffu))));
-    w.PutU32(static_cast<uint32_t>(sr.hits.size()));
-    for (const auto& h : sr.hits) {
-        w.PutString(h.path);
-        w.PutString(h.name);
-        w.PutU32(h.is_dir ? 1u : 0u);
-        w.PutU32(static_cast<uint32_t>(h.size));
-        w.PutU32(static_cast<uint32_t>(h.size >> 32));
-        w.PutU32(static_cast<uint32_t>(h.mtime));
-        w.PutU32(static_cast<uint32_t>(h.mtime >> 32));
-    }
-    w.PutU64(sr.revision);
-    return w.data();
+    return wire::WriteSearch(sr);
 }
 
 std::vector<uint8_t> VolumesPayload() {
-    PayloadWriter w;
+    wire::VolumesWire payload;
+    payload.as_service = g.as_service;
+    // The machine config supplies the exclusion lists; session mode has none.
     IndexConfig config;
     if (g.as_service) LoadMachineConfig(config, nullptr);
-    const auto volumes = g.engine.Volumes();
-    w.PutU32(g.as_service ? 1u : 0u);
-    w.PutString(DataDir());
-    w.PutU32(static_cast<uint32_t>(volumes.size()));
-    for (const auto& volume : volumes) {
-        w.PutString(volume.id);
-        w.PutString(volume.label);
-        w.PutString(volume.mount_point);
-        w.PutString(volume.file_system);
-        w.PutString(volume.state);
-        w.PutString(volume.error);
-        uint32_t flags = volume.online ? 1u : 0u;
-        if (volume.supported) flags |= 2u;
-        if (volume.enabled) flags |= 4u;
-        w.PutU32(flags);
-        w.PutU32(static_cast<uint32_t>(volume.kind));
-        w.PutU32(volume.progress);
-        w.PutU32(static_cast<uint32_t>(volume.indexed_items));
-        w.PutU32(static_cast<uint32_t>(volume.indexed_items >> 32));
-    }
+    payload.volumes = g.engine.Volumes();
+    payload.data_dir = DataDir();
     if (g.as_service) {
-        // Sent after the volume rows so newer clients receive the exclusion list.
-        w.PutU32(static_cast<uint32_t>(config.excluded_paths.size()));
-        for (const auto& path : config.excluded_paths) w.PutString(path);
-        // Appended for clients that show the system folder switch; older
-        // clients stop reading after the user list.
-        w.PutU32(config.exclude_system ? 1u : 0u);
-        w.PutU32(static_cast<uint32_t>(config.system_groups.size()));
-        for (const auto& group : config.system_groups) w.PutString(group);
-        const auto system_paths = SystemExclusionPaths(config);
-        w.PutU32(static_cast<uint32_t>(system_paths.size()));
-        for (const auto& path : system_paths) w.PutString(path);
-    } else {
-        w.PutU32(0);
+        payload.excluded_paths = config.excluded_paths;
+        payload.exclude_system = config.exclude_system;
+        payload.system_groups = config.system_groups;
+        payload.system_paths = SystemExclusionPaths(config);
     }
-    return w.data();
-}
-
-bool ParseQuery(const uint8_t* p, size_t n, Query& q) {
-    PayloadReader r(p, n);
-    uint32_t flags = 0, sort = 0, limit = 0, offset = 0;
-    if (!r.GetU32(flags) || !r.GetU32(sort) || !r.GetU32(limit) || !r.GetU32(offset) ||
-        !r.GetString(q.needle) || !r.GetString(q.path_prefix))
-        return false;
-    if (sort > static_cast<uint32_t>(ResultSort::Mtime) ||
-        q.needle.size() > 4096 || q.path_prefix.size() > 32768)
-        return false;
-    q.rank = (flags & 1) != 0;
-    q.folders_only = (flags & 2) != 0;
-    q.sort_desc = (flags & 4) != 0;
-    q.subscribe = (flags & 8) != 0;
-    if (r.remaining() && !r.GetU64(q.session_id)) return false;
-    q.sort = static_cast<ResultSort>(sort);
-    q.limit = limit;
-    q.offset = offset;
-    if (q.limit > kSearchPageCap) q.limit = kSearchPageCap;
-    return true;
+    return wire::WriteVolumes(payload);
 }
 
 void QueueSearch(std::shared_ptr<Client> c, uint32_t id, Query query, bool refresh) {
@@ -817,7 +762,7 @@ void ClientThread(std::shared_ptr<Client> c) {
             const uint32_t id = hdr.request_id;
             c->latest_search.store(id);
             Query query;
-            if (!ParseQuery(payload.data(), payload.size(), query)) break;
+            if (!wire::ReadQuery(payload.data(), payload.size(), query)) break;
             QueueSearch(c, id, std::move(query));
         } else if (hdr.type == REQ_IDX_TEST_SHUTDOWN && g.test_mode) {
             TraceSearch("filename_shutdown_requested");

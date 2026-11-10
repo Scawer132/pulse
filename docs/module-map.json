@@ -4,7 +4,7 @@
   "upstream": "jimmgreen/pulse",
   "generated_by": "tools/ci/gen_module_map.py",
   "note": "Ownership is measured against main (upstream mirror). Line counts are not included; see the files.",
-  "source_files": 2302,
+  "source_files": 2304,
   "unmapped": [],
   "modules": [
     {
@@ -22,12 +22,13 @@
       ],
       "entry": "src/index/index_engine.h",
       "invariants": "索引数据只由 Pulse.Index.exe 写；pulse.exe 通过 ipc 查询。",
-      "files": 118,
+      "files": 119,
       "owner": "mixed",
       "local_files": [
         "src/index/index_client.cpp",
         "src/index/index_client.h",
-        "src/index/index_config.cpp"
+        "src/index/index_config.cpp",
+        "src/index/index_payload.h"
       ],
       "tests": [
         "pulse_search_audit_test",
@@ -91,6 +92,7 @@
         "pulse_index_caller_filter_test",
         "pulse_index_host_backpressure_test",
         "pulse_index_mft_read_test",
+        "pulse_index_payload_test",
         "pulse_index_shard_publish_test",
         "pulse_index_writer_idle_test",
         "pulse_mft_completion_test",
@@ -826,11 +828,12 @@
       ],
       "entry": "src/bench/preview_test_main.cpp",
       "invariants": "测试是 [PASS]/[FAIL] 可执行文件，exit 0 为通过；未注册 CTest。",
-      "files": 616,
+      "files": 617,
       "owner": "mixed",
       "local_files": [
         "src/bench/app_controllers_test.cpp",
         "src/bench/frame_pump_test.cpp",
+        "src/bench/index_payload_test.cpp",
         "src/bench/wndproc_guard_test.cpp"
       ],
       "tests": []
@@ -4939,6 +4942,17 @@
       "sources": 13,
       "product_sources": 11,
       "owner": "mixed"
+    },
+    {
+      "name": "pulse_index_payload_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "index"
+      ],
+      "sources": 1,
+      "product_sources": 0,
+      "owner": "local"
     },
     {
       "name": "pulse_index_perf",

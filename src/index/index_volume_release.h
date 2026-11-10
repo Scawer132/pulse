@@ -1,4 +1,5 @@
 #pragma once
+#include "index_payload.h"
 #include "index_protocol.h"
 #include <algorithm>
 
@@ -82,12 +83,10 @@ private:
         return unsupported ? ERROR_NOT_SUPPORTED : ERROR_SUCCESS;
     }
     static bool SupportsPause(const std::vector<uint8_t>& bytes) {
-        ipc::PayloadReader reader(bytes.data(), bytes.size());
-        uint32_t ready = 0, count = 0, pinyin = 0, version = 0, capability = 0;
-        uint64_t revision = 0; std::wstring status;
-        return reader.GetU32(ready) && reader.GetU32(count) && reader.GetString(status) &&
-            reader.GetU32(pinyin) && reader.GetU64(revision) && reader.GetU32(version) && version == 1 &&
-            reader.GetU32(capability) && capability == kVolumePauseCapability;
+        wire::StatusWire status;
+        return wire::ReadStatus(bytes.data(), bytes.size(), status) && status.revision_present &&
+            status.revision_version == 1 && status.capability_present &&
+            status.capability == kVolumePauseCapability;
     }
     static bool ServiceRunning() {
         SC_HANDLE manager = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);

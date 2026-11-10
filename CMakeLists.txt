@@ -231,6 +231,8 @@ add_executable(pulse_index_test
     src/index/change_tracking.cpp)
 target_link_libraries(pulse_index_test PRIVATE shell32 mpr advapi32)
 
+add_executable(pulse_index_payload_test src/bench/index_payload_test.cpp)
+
 add_executable(pulse_index_shard_publish_test
     src/bench/index_shard_publish_test.cpp src/index/index_shard.cpp)
 

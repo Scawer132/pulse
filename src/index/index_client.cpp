@@ -3,6 +3,7 @@
 #include "index_client.h"
 #include "index_config.h"
 #include "index_executable.h"
+#include "index_payload.h"
 #include "search_trace.h"
 #include <chrono>
 #include <algorithm>
@@ -322,15 +323,13 @@ bool IndexClient::ReadMsg(ipc::MsgHeader& hdr, std::vector<uint8_t>& payload) {
 }
 
 void IndexClient::HandleStatus(const uint8_t* p, size_t n) {
-    ipc::PayloadReader r(p, n);
-    uint32_t ready = 0, count = 0;
-    std::wstring text;
-    if (!r.GetU32(ready) || !r.GetU32(count) || !r.GetString(text)) return;
-    uint32_t pinyin_ready = 0;
-    // Optional trailing status field: older hosts remain usable and report unavailable.
-    if (!r.GetU32(pinyin_ready)) pinyin_ready = 0;
-    uint64_t revision = 0; uint32_t version = 0;
-    if (r.GetU64(revision) && r.GetU32(version) && version == 1) revision_ = revision;
+    wire::StatusWire status;
+    if (!wire::ReadStatus(p, n, status)) return;
+    std::wstring text = std::move(status.text);
+    // Only the current revision format can drive live queries; a host that
+    // reports anything else still answers, so tell the user why the field
+    // stays on manual search instead of failing the connection.
+    if (status.revision_present && status.revision_version == 1) revision_ = status.revision;
     else text = L"索引进程版本过旧，请重启 Pulse 和索引服务以启用实时搜索";
     bool changed = false;
     {
@@ -338,9 +337,9 @@ void IndexClient::HandleStatus(const uint8_t* p, size_t n) {
         changed = status_ != text;
         status_ = std::move(text);
     }
-    changed |= pinyin_ready_.exchange(pinyin_ready == 1) != (pinyin_ready == 1);
-    changed |= ready_.exchange(ready != 0) != (ready != 0);
-    changed |= count_.exchange(count) != count;
+    changed |= pinyin_ready_.exchange(status.pinyin_ready == 1) != (status.pinyin_ready == 1);
+    changed |= ready_.exchange(status.ready != 0) != (status.ready != 0);
+    changed |= count_.exchange(status.count) != status.count;
     // The host rebroadcasts after every journal batch, mostly with only a new
     // revision; subscribed searches refresh on their own, so only a change
     // the window can show is worth waking it for.
@@ -349,27 +348,10 @@ void IndexClient::HandleStatus(const uint8_t* p, size_t n) {
 
 void IndexClient::HandleSearch(uint32_t id, const uint8_t* p, size_t n) {
     { std::lock_guard lock(mu_); if (std::none_of(session_requests_.begin(), session_requests_.end(), [id](const auto& value) { return value.second == id; })) return; }
-    ipc::PayloadReader r(p, n);
-    uint32_t total = 0, nh = 0;
-    if (!r.GetU32(total) || !r.GetU32(nh)) return;
     SearchResult sr;
-    sr.total = total;
-    sr.hits.reserve(nh);
-    for (uint32_t i = 0; i < nh; ++i) {
-        Hit h;
-        uint32_t flags = 0, size_lo = 0, size_hi = 0, mt_lo = 0, mt_hi = 0;
-        if (!r.GetString(h.path) || !r.GetString(h.name) || !r.GetU32(flags) ||
-            !r.GetU32(size_lo) || !r.GetU32(size_hi) ||
-            !r.GetU32(mt_lo) || !r.GetU32(mt_hi))
-            return;
-        h.is_dir = (flags & 1) != 0;
-        h.size = (static_cast<uint64_t>(size_hi) << 32) | size_lo;
-        h.mtime = (static_cast<uint64_t>(mt_hi) << 32) | mt_lo;
-        sr.hits.push_back(std::move(h));
-    }
+    if (!wire::ReadSearch(p, n, sr)) return;
     {
         std::lock_guard<std::mutex> lock(mu_);
-        r.GetU64(sr.revision);
         TraceSearch("filename_received", sr.revision);
         results_[id] = std::move(sr);
     }
@@ -377,63 +359,18 @@ void IndexClient::HandleSearch(uint32_t id, const uint8_t* p, size_t n) {
 }
 
 void IndexClient::HandleVolumes(const uint8_t* p, size_t n) {
-    ipc::PayloadReader r(p, n);
-    uint32_t service = 0, count = 0;
-    std::wstring path;
-    if (!r.GetU32(service) || !r.GetString(path) || !r.GetU32(count)) return;
-    std::vector<VolumeInfo> volumes;
-    volumes.reserve(count);
-    for (uint32_t i = 0; i < count; ++i) {
-        VolumeInfo volume;
-        uint32_t flags = 0, kind = 0, progress = 0, lo = 0, hi = 0;
-        if (!r.GetString(volume.id) || !r.GetString(volume.label) ||
-            !r.GetString(volume.mount_point) || !r.GetString(volume.file_system) ||
-            !r.GetString(volume.state) || !r.GetString(volume.error) ||
-            !r.GetU32(flags) || !r.GetU32(kind) || !r.GetU32(progress) ||
-            !r.GetU32(lo) || !r.GetU32(hi)) return;
-        volume.online = (flags & 1u) != 0;
-        volume.supported = (flags & 2u) != 0;
-        volume.enabled = (flags & 4u) != 0;
-        volume.kind = static_cast<VolumeKind>(kind);
-        volume.progress = progress;
-        volume.indexed_items = (static_cast<uint64_t>(hi) << 32) | lo;
-        volumes.push_back(std::move(volume));
-    }
-    uint32_t excluded_count = 0;
-    std::vector<std::wstring> excluded_paths;
-    if (r.GetU32(excluded_count)) {
-        excluded_paths.reserve(excluded_count);
-        for (uint32_t i = 0; i < excluded_count; ++i) {
-            std::wstring path_value;
-            if (!r.GetString(path_value)) break;
-            excluded_paths.push_back(std::move(path_value));
-        }
-    }
-    uint32_t system_flags = 0, group_count = 0, system_count = 0;
-    std::vector<std::wstring> groups, system_paths;
-    bool system_known = r.GetU32(system_flags) && r.GetU32(group_count);
-    for (uint32_t i = 0; system_known && i < group_count; ++i) {
-        std::wstring group;
-        system_known = r.GetString(group);
-        if (system_known) groups.push_back(std::move(group));
-    }
-    system_known = system_known && r.GetU32(system_count);
-    for (uint32_t i = 0; system_known && i < system_count; ++i) {
-        std::wstring path_value;
-        system_known = r.GetString(path_value);
-        if (system_known) system_paths.push_back(std::move(path_value));
-    }
-    if (!system_known) { groups.clear(); system_paths.clear(); }
+    wire::VolumesWire incoming;
+    if (!wire::ReadVolumes(p, n, incoming)) return;
     {
         std::lock_guard<std::mutex> lock(mu_);
-        service_mode_ = service != 0;
-        index_path_ = std::move(path);
-        volumes_ = std::move(volumes);
-        excluded_paths_ = std::move(excluded_paths);
-        system_known_ = system_known;
-        exclude_system_ = system_known && (system_flags & 1u) != 0;
-        system_groups_ = std::move(groups);
-        system_paths_ = std::move(system_paths);
+        service_mode_ = incoming.as_service;
+        index_path_ = std::move(incoming.data_dir);
+        volumes_ = std::move(incoming.volumes);
+        excluded_paths_ = std::move(incoming.excluded_paths);
+        system_known_ = incoming.system_known;
+        exclude_system_ = incoming.exclude_system;
+        system_groups_ = std::move(incoming.system_groups);
+        system_paths_ = std::move(incoming.system_paths);
         scope_ready_ = true;
     }
     if (notify_ && status_msg_) PostMessageW(notify_, status_msg_, 0, 0);
@@ -448,20 +385,7 @@ void IndexClient::FlushPendingSearch() {
         id = pending_searches_.begin()->second.first;
         q = pending_searches_.begin()->second.second;
     }
-    ipc::PayloadWriter w;
-    uint32_t flags = 0;
-    if (q.rank) flags |= 1;
-    if (q.folders_only) flags |= 2;
-    if (q.sort_desc) flags |= 4;
-    if (q.subscribe) flags |= 8;
-    w.PutU32(flags);
-    w.PutU32(static_cast<uint32_t>(q.sort));
-    w.PutU32(static_cast<uint32_t>(q.limit));
-    w.PutU32(static_cast<uint32_t>(q.offset));
-    w.PutString(q.needle);
-    w.PutString(q.path_prefix);
-    w.PutU64(q.session_id);
-    if (WriteMsg(REQ_IDX_SEARCH, id, w.data())) {
+    if (WriteMsg(REQ_IDX_SEARCH, id, wire::WriteQuery(q))) {
         std::lock_guard<std::mutex> lock(mu_);
         auto found = pending_searches_.find(q.session_id);
         if (found != pending_searches_.end() && found->second.first == id) pending_searches_.erase(found);
