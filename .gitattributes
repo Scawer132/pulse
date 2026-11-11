@@ -1,0 +1,13 @@
+# Local merge behavior — see local/merge-policy.md. `main` never contains this file.
+#
+# The l10n outputs are generated: take the upstream side for the whole file and
+# regenerate from tools/l10n/catalog.tsv + tools/l10n/local/catalog.tsv. The
+# driver lives in per-clone config (tools/local/setup-git.ps1):
+#   git config merge.l10n.driver "cp %B %A"
+# Without that config git warns and falls back to a normal (safe) merge.
+src/common/string_ids.h                 merge=l10n
+src/common/localization.h               merge=l10n
+src/common/strings.rcinc                merge=l10n
+src/common/strings_zh_tw.rcinc          merge=l10n
+src/common/zh_hant_table.inc            merge=l10n
+src/setup/setup_strings.generated.inc   merge=l10n
