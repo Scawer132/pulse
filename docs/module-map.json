@@ -4,7 +4,7 @@
   "upstream": "jimmgreen/pulse",
   "generated_by": "tools/ci/gen_module_map.py",
   "note": "Ownership is measured against main (upstream mirror). Line counts are not included; see the files.",
-  "source_files": 2380,
+  "source_files": 2381,
   "unmapped": [],
   "modules": [
     {
@@ -2275,11 +2275,12 @@
       ],
       "entry": "src/ui/ui_details_panel.cpp",
       "invariants": "控件只做局部状态；文件操作通过 app 的命令进入。",
-      "files": 46,
+      "files": 47,
       "owner": "mixed",
       "local_files": [
         "src/ui/quick_access_editor.cpp",
         "src/ui/ui_details_panel.cpp",
+        "src/ui/ui_details_panel_local.cpp",
         "src/ui/ui_details_panel_local.h"
       ],
       "tests": [

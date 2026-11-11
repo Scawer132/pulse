@@ -40,6 +40,7 @@ set(PULSE_PICKER_INPROCESS_SOURCES
     src/ui/ui_hit_test.cpp
     src/ui/ui_fluent_svg.cpp
     src/ui/ui_details_panel.cpp
+    src/ui/ui_details_panel_local.cpp
     src/ui/ui_pane_list.cpp
     src/ui/ui_tray_shelf.cpp
     src/ui/ui_toolbar.cpp

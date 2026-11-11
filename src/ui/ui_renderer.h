@@ -1478,6 +1478,10 @@ private:
     float details_width_ = 340.0f;
     bool extension_dock_visible_ = false;
     D2D1_RECT_F details_preview_bounds_{};
+    // Where the well's 下载并预览 button and the size row's 计算大小 sat in this
+    // frame's layout (empty when not drawn). ui_details_panel_local.cpp draws
+    // them and cannot see DrawDetailsPanel's hit struct.
+    D2D1_RECT_F details_cloud_button_{}, details_size_calc_{};
 
     mutable ComPtr<ID2D1SolidColorBrush> brBg_;
     mutable ComPtr<ID2D1SolidColorBrush> brText_;
@@ -1564,6 +1568,17 @@ private:
     float hover_card_w_ = 0.0f, hover_well_h_ = 0.0f;
     unsigned long long hover_ease_ms_ = 0;
     bool hover_bench_ = false;                 // --bench-hover owns the cache and player
+    // The details panel's local card/well drawing (ui_details_panel_local.cpp):
+    // one call per branch, so DrawDetailsPanel keeps only the panel's layout.
+    void DrawDetailsText(ID2D1DeviceContext* dc, const std::wstring& str, const D2D1_RECT_F& rc,
+                         IDWriteTextFormat* fmt, const D2D1_COLOR_F& color, bool right = false);
+    void DrawDetailsPcCardIdentity(ID2D1DeviceContext* dc, const Theme& theme,
+                                   const DetailsPanelView& d, const D2D1_RECT_F& contentRc);
+    void DrawDetailsIconOnlyWell(ID2D1DeviceContext* dc, const Theme& theme,
+                                 const DetailsPanelView& d, const D2D1_RECT_F& contentRc);
+    void DrawDetailsCloudWell(const WindowViewModel& vm, ID2D1DeviceContext* dc,
+                              const Theme& theme, const DetailsPanelView& d,
+                              const D2D1_RECT_F& contentRc);
     // A folder's card (ui_hover_preview.cpp), and where the last card went.
     void DrawHoverFolderCard(const HoverPreviewView& view, const D2D1_RECT_F& client,
                              const Theme& theme, bool high_contrast);
