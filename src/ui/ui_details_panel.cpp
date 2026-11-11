@@ -48,46 +48,6 @@ DetailsMotion& DetailsMotionFor(const void* renderer) {
     return motions[renderer];
 }
 
-// One line of details text broken at the last space that fits; prefers a
-// balanced second line over a lone orphan word ("... Laptop" / "GPU"). Returns
-// {text, ""} when it already fits. Used by the 此电脑 card's identity block and
-// by fact values that are too long for their column.
-std::pair<std::wstring, std::wstring> SplitDetailLine(const std::wstring& text, float width,
-                                                      IDWriteFactory2* factory,
-                                                      IDWriteTextFormat* fmt) {
-    std::pair<std::wstring, std::wstring> out{text, std::wstring()};
-    if (!factory || !fmt || text.empty() || width <= 1.0f) return out;
-    const auto measure = [&](const std::wstring& value) {
-        return MeasureTextWidth(factory, fmt, value);
-    };
-    if (measure(text) <= width) return out;
-    size_t cut = text.find_last_of(L' ');
-    while (cut != std::wstring::npos && cut > 0 && measure(text.substr(0, cut)) > width)
-        cut = cut > 1 ? text.find_last_of(L' ', cut - 1) : std::wstring::npos;
-    if (cut == std::wstring::npos || cut == 0) {
-        // No usable space (CJK, a hyphenated model name): cut by character.
-        size_t lo = 1, hi = text.size();
-        while (lo < hi) {
-            const size_t mid = (lo + hi + 1) / 2;
-            if (measure(text.substr(0, mid)) <= width) lo = mid; else hi = mid - 1;
-        }
-        cut = lo;
-    } else {
-        const std::wstring head = text.substr(0, cut);
-        const std::wstring tail = cut + 1 < text.size() ? text.substr(cut + 1) : std::wstring();
-        const size_t prev = head.find_last_of(L' ');
-        if (!tail.empty() && tail.find(L' ') == std::wstring::npos &&
-            prev != std::wstring::npos && prev > 0 &&
-            measure(tail) * 2.5f < measure(head) && measure(text.substr(prev)) <= width)
-            cut = prev;
-    }
-    std::wstring second = text.substr(cut);
-    while (!second.empty() && second.front() == L' ') second.erase(second.begin());
-    out.first = text.substr(0, cut);
-    while (!out.first.empty() && out.first.back() == L' ') out.first.pop_back();
-    out.second = std::move(second);
-    return out;
-}
 }  // namespace
 
 D2D1_RECT_F MainRenderer::DetailsPanelRect(float w, float h) const {
