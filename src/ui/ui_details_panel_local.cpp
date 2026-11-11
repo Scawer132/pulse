@@ -1,15 +1,19 @@
 // ui_details_panel_local.cpp — Fork-only details panel drawing (rules: local/merge-policy.md).
 //
 // The panel's local redesign, kept out of MainRenderer::DrawDetailsPanel so that
-// upstream's function keeps one call per branch. Each block is moved verbatim
-// (comments included); only the function boundary and two call sites changed:
+// upstream's function keeps one call per branch: the 此电脑 identity block, the
+// icon-only well, the 下载并预览 well, the 此电脑 fact sheet (返回下一个 y) and the
+// size row's 计算大小 button. Each block is moved verbatim (comments included);
+// only the function boundary and three call sites changed:
 //
-//   - the well's 下载并预览 rect comes from details_cloud_button_, a snapshot of
-//     this frame's LayoutDetailsPanel output. The draw function used to read the
-//     hit struct directly; the member keeps the signature short and is cleared
-//     next to details_preview_bounds_ at the top of the frame.
-//   - the panel's `text` lambda lives in DrawDetailsPanel's scope, so the local
-//     blocks use DetailsText below (same body).
+//   - the well's 下载并预览 rect comes from details_cloud_button_, and the size
+//     row's from details_size_calc_: snapshots of this frame's LayoutDetailsPanel
+//     output, taken in DrawDetailsPanel right after the layout call and cleared
+//     next to details_preview_bounds_ before its early return. The draw function
+//     used to read the hit struct directly; the members keep the signatures short.
+//   - the panel's `text` lambda lives in DrawDetailsPanel's scope and draws with
+//     the member DrawTextRect, so the local blocks use DrawDetailsText below.
+//   - the fact sheet recomputes DrawDetailsPanel's 12 dip content padding.
 //
 // ReleasePreviewHosts is here as well: it belongs to the 启用预览 master switch
 // (app_commands.cpp), but it releases the hosts behind this well and the hover
@@ -39,6 +43,18 @@ void MainRenderer::DrawDetailsText(ID2D1DeviceContext* dc, const std::wstring& s
     DrawTextRect(dc, fmt, brText_.get(), str, rc.left, rc.top,
                  rc.right - rc.left, rc.bottom - rc.top);
     fmt->SetTextAlignment(old);
+}
+
+void MainRenderer::ReleasePreviewHosts(bool details, bool hover) {
+    // The decode cache owns the Pulse.Preview.exe children behind the details
+    // well and the hover card; releasing them is what makes the switch mean
+    // "no preview process", not just "no new requests". The well's content
+    // itself belongs to the embedded preview host, which the app closes.
+    if (details) {
+        details_preview_bounds_ = {};
+        details_cache_.StopHosts();
+    }
+    if (hover) hover_cache_.StopHosts();
 }
 
 void MainRenderer::DrawDetailsPcCardIdentity(ID2D1DeviceContext* dc, const Theme& theme,
@@ -213,6 +229,54 @@ void MainRenderer::DrawDetailsCloudWell(const WindowViewModel& vm, ID2D1DeviceCo
                                brText_.get());
         }
     }
+}
+
+float MainRenderer::DrawDetailsFactRows(ID2D1DeviceContext* dc, const Theme& theme,
+                                        const DetailsPanelView& d, const D2D1_RECT_F& panel,
+                                        float y) {
+    const float s = scale_;
+    // DrawDetailsPanel's content padding: the same 12 dip it uses for its `pad`.
+    const float pad = 12.0f * s;
+    // The system card: one fact per line, the key in the accent ink and the
+    // value in a column shared by every row - a dense system sheet rather
+    // than a label/value form. A value too long for its column continues on
+    // a second line instead of being cut mid-name. A folder card instead
+    // reuses the sections below, exactly as a selected folder does.
+    IDWriteTextFormat* small_fmt = compositor_->SmallFormat();
+    IDWriteFactory2* factory = compositor_->DwriteFactory();
+    const float content_w = panel.right - panel.left - pad * 2.0f;
+    const float key_w = DetailsFactKeyWidth(d, content_w, s, factory, small_fmt);
+    const float valueX = panel.left + pad + key_w;
+    const float value_w = content_w - key_w;
+    const float avail = std::max(1.0f, value_w - 2.0f * s);
+    for (const auto& row : d.context_rows) {
+        DrawDetailsText(dc, row.first, D2D1::RectF(panel.left + pad, y, valueX - 4.0f * s,
+                                                   y + kDetailsFactLineDip * s),
+                        small_fmt, theme.accent);
+        MakeBrush(dc, theme.text, brText_);
+        const auto split = SplitDetailLine(row.second, avail, factory, small_fmt);
+        DrawTextEndEllipsis(compositor_, small_fmt, brText_.get(), split.first, valueX, y,
+                            value_w, kDetailsFactLineDip * s);
+        if (!split.second.empty())
+            DrawTextEndEllipsis(compositor_, small_fmt, brText_.get(), split.second, valueX,
+                                y + kDetailsFactLineDip * s, value_w,
+                                kDetailsFactLineDip * s);
+        y += DetailsFactRowHeight(row.second, value_w, s, factory, small_fmt);
+    }
+    y += 8.0f * s;
+    return y;
+}
+
+void MainRenderer::DrawDetailsSizeCalcText(const WindowViewModel& vm, ID2D1DeviceContext* dc,
+                                           const Theme& theme) {
+    // 计算大小: text button like the 安全 section's 更改,
+    // left-aligned with the fact values.
+    const bool hot = IsHovered(vm, HitTestResult::DetailsSizeCalc);
+    DrawDetailsText(dc, pulse::l10n::Get(pulse::l10n::StringId::DetailsCalcSize),
+                    D2D1::RectF(details_size_calc_.left, details_size_calc_.top,
+                                details_size_calc_.right, details_size_calc_.bottom),
+                    compositor_->SmallFormat(),
+                    hot ? theme.accent_hover : theme.accent);
 }
 
 }  // namespace pulse::ui

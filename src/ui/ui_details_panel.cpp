@@ -47,7 +47,6 @@ DetailsMotion& DetailsMotionFor(const void* renderer) {
     static std::unordered_map<const void*, DetailsMotion> motions;
     return motions[renderer];
 }
-
 }  // namespace
 
 D2D1_RECT_F MainRenderer::DetailsPanelRect(float w, float h) const {
@@ -58,17 +57,6 @@ D2D1_RECT_F MainRenderer::DetailsPanelRect(float w, float h) const {
     return D2D1::RectF(w - margin_ - pw, top, w - margin_, bottom);
 }
 
-void MainRenderer::ReleasePreviewHosts(bool details, bool hover) {
-    // The decode cache owns the Pulse.Preview.exe children behind the details
-    // well and the hover card; releasing them is what makes the switch mean
-    // "no preview process", not just "no new requests". The well's content
-    // itself belongs to the embedded preview host, which the app closes.
-    if (details) {
-        details_preview_bounds_ = {};
-        details_cache_.StopHosts();
-    }
-    if (hover) hover_cache_.StopHosts();
-}
 void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F& rect,
                                     const Theme& theme) {
     details_preview_bounds_ = {};
@@ -482,33 +470,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
     };
 
     if (d.pc_card) {
-        // The system card: one fact per line, the key in the accent ink and the
-        // value in a column shared by every row - a dense system sheet rather
-        // than a label/value form. A value too long for its column continues on
-        // a second line instead of being cut mid-name. A folder card instead
-        // reuses the sections below, exactly as a selected folder does.
-        IDWriteTextFormat* small_fmt = compositor_->SmallFormat();
-        IDWriteFactory2* factory = compositor_->DwriteFactory();
-        const float content_w = panel.right - panel.left - pad * 2.0f;
-        const float key_w = DetailsFactKeyWidth(d, content_w, s, factory, small_fmt);
-        const float valueX = panel.left + pad + key_w;
-        const float value_w = content_w - key_w;
-        const float avail = std::max(1.0f, value_w - 2.0f * s);
-        for (const auto& row : d.context_rows) {
-            text(row.first, D2D1::RectF(panel.left + pad, y, valueX - 4.0f * s,
-                                        y + kDetailsFactLineDip * s),
-                 small_fmt, theme.accent);
-            MakeBrush(dc, theme.text, brText_);
-            const auto split = SplitDetailLine(row.second, avail, factory, small_fmt);
-            DrawTextEndEllipsis(compositor_, small_fmt, brText_.get(), split.first, valueX, y,
-                                value_w, kDetailsFactLineDip * s);
-            if (!split.second.empty())
-                DrawTextEndEllipsis(compositor_, small_fmt, brText_.get(), split.second, valueX,
-                                    y + kDetailsFactLineDip * s, value_w,
-                                    kDetailsFactLineDip * s);
-            y += DetailsFactRowHeight(row.second, value_w, s, factory, small_fmt);
-        }
-        y += 8.0f * s;
+        y = DrawDetailsFactRows(dc, theme, d, panel, y);
     } else if (d.multi_count > 1) {
         text(pulse::l10n::Get(pulse::l10n::StringId::Information),
              D2D1::RectF(panel.left + 12.0f * s, y, panel.right - 12.0f * s,
@@ -540,16 +502,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
                 infoRow(pulse::l10n::Get(pulse::l10n::StringId::ColumnSize).c_str(),
                         d.size_pending ? pulse::l10n::Get(pulse::l10n::StringId::Calculating)
                                                 : d.size_text, iy);
-                if (d.is_dir && d.size_manual) {
-                    // 计算大小: text button like the 安全 section's 更改,
-                    // left-aligned with the fact values.
-                    const bool hot = IsHovered(vm, HitTestResult::DetailsSizeCalc);
-                    text(pulse::l10n::Get(pulse::l10n::StringId::DetailsCalcSize),
-                         D2D1::RectF(hit.size_calc.left, hit.size_calc.top,
-                                     hit.size_calc.right, hit.size_calc.bottom),
-                         compositor_->SmallFormat(),
-                         hot ? theme.accent_hover : theme.accent);
-                }
+                if (d.is_dir && d.size_manual) DrawDetailsSizeCalcText(vm, dc, theme);
                 if (DetailsShowsContains(d))
                     infoRow(pulse::l10n::Get(pulse::l10n::StringId::Contains).c_str(), d.contains_text, iy);
                 infoRow(pulse::l10n::Get(pulse::l10n::StringId::Created).c_str(), d.created_text, iy);

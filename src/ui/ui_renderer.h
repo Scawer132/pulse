@@ -1579,6 +1579,11 @@ private:
     void DrawDetailsCloudWell(const WindowViewModel& vm, ID2D1DeviceContext* dc,
                               const Theme& theme, const DetailsPanelView& d,
                               const D2D1_RECT_F& contentRc);
+    // The 此电脑 card's fact sheet (returns the next y) and the size row's button.
+    float DrawDetailsFactRows(ID2D1DeviceContext* dc, const Theme& theme,
+                              const DetailsPanelView& d, const D2D1_RECT_F& panel, float y);
+    void DrawDetailsSizeCalcText(const WindowViewModel& vm, ID2D1DeviceContext* dc,
+                                 const Theme& theme);
     // A folder's card (ui_hover_preview.cpp), and where the last card went.
     void DrawHoverFolderCard(const HoverPreviewView& view, const D2D1_RECT_F& client,
                              const Theme& theme, bool high_contrast);
