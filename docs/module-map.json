@@ -4,7 +4,7 @@
   "upstream": "jimmgreen/pulse",
   "generated_by": "tools/ci/gen_module_map.py",
   "note": "Ownership is measured against main (upstream mirror). Line counts are not included; see the files.",
-  "source_files": 2377,
+  "source_files": 2379,
   "unmapped": [],
   "modules": [
     {
@@ -1794,10 +1794,12 @@
       ],
       "entry": "src/app/selftest_1b2.cpp",
       "invariants": "测试驱动不进发布 exe（PULSE_TEST_HOOKS 关闭时排除）。",
-      "files": 12,
+      "files": 14,
       "owner": "mixed",
       "local_files": [
         "src/app/selftest_1b2.cpp",
+        "src/app/selftest_1b2_local.h",
+        "src/app/selftest_local_test.cpp",
         "src/app/tree_plate_damage_test.cpp"
       ],
       "tests": []
