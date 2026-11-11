@@ -6,6 +6,12 @@
 // it stays a header rather than a .cpp of its own; upstream's HitTest keeps one
 // short call per hook and new local rows are added in this file — not inside its
 // if-chains (rules: local/merge-policy.md).
+//
+// Selftests hit-test a renderer that owns no compositor, so every helper called
+// from HitTest must tolerate a null one: HitTest passes null for the DWrite
+// factory and format when compositor_ is unset. This note used to sit in
+// ui_hit_test.cpp and was the one hunk 1.0.60 conflicted on; it lives here now,
+// where it cannot clash with upstream.
 
 #pragma once
 
