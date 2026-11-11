@@ -530,13 +530,7 @@ float LayoutSettingsContent(SettingsLayout& l, const WindowViewModel& vm, float 
 namespace pack_text {
 inline const wchar_t* Title() { return l10n::Get(l10n::StringId::QuickPreview).c_str(); }
 inline const wchar_t* Intro() { return l10n::Get(l10n::StringId::HoverOverOrPressSpaceToPreviewFilesChooseHowExploreFormatSup).c_str(); }
-// 启用预览 and its two children.
-inline const wchar_t* MasterTitle() { return l10n::Get(l10n::StringId::PreviewEnableTitle).c_str(); }
-inline const wchar_t* MasterDesc() { return l10n::Get(l10n::StringId::PreviewEnableDesc).c_str(); }
-inline const wchar_t* HoverChildTitle() { return l10n::Get(l10n::StringId::PreviewHoverSpaceTitle).c_str(); }
-inline const wchar_t* HoverChildDesc() { return l10n::Get(l10n::StringId::PreviewHoverSpaceDesc).c_str(); }
-inline const wchar_t* DetailsChildTitle() { return l10n::Get(l10n::StringId::PreviewDetailsTitle).c_str(); }
-inline const wchar_t* DetailsChildDesc() { return l10n::Get(l10n::StringId::PreviewDetailsDesc).c_str(); }
+inline const wchar_t* TriggerSection() { return l10n::Get(l10n::StringId::PreviewTrigger).c_str(); }
 inline const wchar_t* TriggerTitle() { return l10n::Get(l10n::StringId::OpenPreviews).c_str(); }
 inline const wchar_t* TriggerDesc(int trigger) {
     return trigger == 1
@@ -1101,6 +1095,10 @@ inline int HitTestSettingsStore(const SettingsLayout& l, const WindowViewModel& 
     return -1;
 }
 
+// Fork: the 启用预览 gate section. Kept as one call so this file keeps a small
+// patch surface (rules: local/merge-policy.md); the code is in settings_packs_local.h.
+#include "settings_packs_local.h"
+
 float LayoutSettingsPacks(SettingsLayout& l, const WindowViewModel& vm, float scale,
                           float y, const fluent::Painter* painter) {
     const float left = l.content.left + 20*scale, right = l.content.right - 20*scale;
@@ -1116,60 +1114,8 @@ float LayoutSettingsPacks(SettingsLayout& l, const WindowViewModel& vm, float sc
     // card leading to the 增强包 page (8), which holds the packs themselves.
     if (vm.settings_page != 8) {
     y += caption_h(pack_text::Intro(), right - left) + 10*scale;
-    // 启用预览: the master switch with its two children on a tinted band (the
-    // page-9 idiom). The children keep their own value while the master is off,
-    // so they stay laid out there and the page draws them faded.
-    {
-        const bool narrow = right - left < 560*scale;
-        auto segments = [&](D2D1_RECT_F r, D2D1_RECT_F* output, int count, float width, bool stack = false) {
-            const auto c = D2D1::RectF(narrow || stack ? r.left + 16*scale : r.right - (width + 16)*scale,
-                r.bottom - 44*scale, r.right - 16*scale, r.bottom - 12*scale);
-            const float w = (c.right - c.left) / static_cast<float>(count);
-            for (int i = 0; i < count; ++i)
-                output[i] = D2D1::RectF(c.left + w*static_cast<float>(i), c.top, c.left + w*static_cast<float>(i + 1), c.bottom);
-        };
-        const float h = narrow ? 112.0f : 64.0f + 8.0f*(font - 1.0f)*4.0f;
-        // A switch row only holds a title and a caption; narrow pages at a large
-        // font wrap that caption to two lines.
-        const float switch_h = narrow ? 88.0f : 64.0f;
-        const float child_inset = 28.0f*scale;
-        float band_top = -1.0f;
-        auto child_row = [&](float height) {
-            if (band_top < 0.0f) {
-                y += 8*scale;
-                band_top = y;
-            }
-            const auto r = D2D1::RectF(left + child_inset, y, right, y + height*scale);
-            l.dividers.push_back(D2D1::RectF(r.left + 16*scale, r.top, r.right - 16*scale, r.top));
-            y = r.bottom;
-            return r;
-        };
-        l.preview_master_row = row(switch_h);
-        l.preview_hover_row = child_row(switch_h);
-        l.trigger_row = child_row(h);
-        segments(l.trigger_row, l.trigger_choice, 2, 220*font);
-        if (vm.settings_preview_trigger == 0) {
-            l.hover_delay_row = child_row(h);
-            segments(l.hover_delay_row, l.hover_delay_choice, 3, 240*font);
-            l.hover_size_row = child_row(h);
-            segments(l.hover_size_row, l.hover_size_choice, 4, 300*font);
-        }
-        l.hold_row = child_row(h);
-        segments(l.hold_row, l.hold_choice, 4, 300*font);
-        l.preview_details_row = child_row(switch_h);
-        // 预览窗口: five sizes need more room before they sit beside the text.
-        const bool stack_sizes = right - left < 820*scale;
-        l.window_section = child_row(28*font);
-        l.preview_size_row = child_row(narrow || stack_sizes ? 112.0f : h);
-        segments(l.preview_size_row, l.preview_size_choice, 5, 420*font, stack_sizes);
-        l.preview_remember_row = child_row((caption_h(pack_text::RememberDesc(), right - left - 126*scale) + 47*scale) / scale);
-        l.space_row = child_row(h);
-        segments(l.space_row, l.space_choice, 2, 260*font);
-        l.loop_row = child_row(h);
-        segments(l.loop_row, l.loop_choice, 3, 320*font);
-        l.child_bands.push_back(D2D1::RectF(left, band_top, right, y));
-        y += 24*scale;
-    }
+    // 启用预览: the gate switch and the rows it owns, on one tinted band.
+    local_pack_preview::Layout(l, vm, left, right, scale, font, y, row, caption_h);
     l.preview_section = row(28*font);
     const float header_top = y;
     l.preview_header_title = D2D1::RectF(left + 54*scale, y + 12*scale, right - 48*scale, y + (12 + 26*font)*scale);

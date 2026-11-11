@@ -4,7 +4,7 @@
   "upstream": "jimmgreen/pulse",
   "generated_by": "tools/ci/gen_module_map.py",
   "note": "Ownership is measured against main (upstream mirror). Line counts are not included; see the files.",
-  "source_files": 2376,
+  "source_files": 2377,
   "unmapped": [],
   "modules": [
     {
@@ -1854,10 +1854,11 @@
       ],
       "entry": "src/ui/ui_settings_view.cpp",
       "invariants": "布局与绘制共用 settings_page_ids 的顺序。",
-      "files": 15,
+      "files": 16,
       "owner": "mixed",
       "local_files": [
         "src/ui/settings_layout_sections.h",
+        "src/ui/settings_packs_local.h",
         "src/ui/ui_settings_core.cpp",
         "src/ui/ui_settings_layout.cpp",
         "src/ui/ui_settings_packs.cpp",

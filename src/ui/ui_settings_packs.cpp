@@ -265,22 +265,17 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
             state.hovered = enabled && hovered(action);
             painter_.DrawSwitch(row_switch(r), L"", state);
         };
-        // The tinted band and its guide line, like the dependent rows on page 9.
-        for (const auto& band : lay.child_bands) {
-            MakeBrush(dc, WithAlpha(theme.text, vm.dark ? 0.035f : 0.024f), brFillHover_);
-            dc->FillRoundedRectangle(D2D1::RoundedRect(band, 8*s, 8*s), brFillHover_.get());
-            MakeBrush(dc, WithAlpha(theme.text_secondary, 0.32f), brTextSecondary_);
-            FillRoundedRect(dc, brTextSecondary_.get(), band.left + 29*s, band.top + 12*s,
-                            1.5f*s, (std::max)(0.0f, band.bottom - band.top - 24*s), 0.75f*s);
-        }
+        // The tinted band, its guide line and the row dividers.
+        MakeBrush(dc, WithAlpha(theme.text, vm.dark ? 0.035f : 0.024f), brFillHover_);
+        MakeBrush(dc, WithAlpha(theme.text_secondary, 0.32f), brTextSecondary_);
         MakeBrush(dc, theme.stroke_divider, brStrokeDivider_);
-        for (const auto& d : lay.dividers)
-            FillRect(dc, brStrokeDivider_.get(), d.left, d.top, d.right - d.left, 1);
+        local_pack_preview::DrawBands(dc, lay, s, brFillHover_.get(), brTextSecondary_.get(),
+                                      brStrokeDivider_.get());
 
-        switch_row(lay.preview_master_row, pack_text::MasterTitle(), pack_text::MasterDesc(),
+        switch_row(lay.preview_master_row, local_pack_text::MasterTitle(), local_pack_text::MasterDesc(),
                    previews_on, PackAction::PreviewMaster, true);
         bool faded = dim(!previews_on);
-        switch_row(lay.preview_hover_row, pack_text::HoverChildTitle(), pack_text::HoverChildDesc(),
+        switch_row(lay.preview_hover_row, local_pack_text::HoverChildTitle(), local_pack_text::HoverChildDesc(),
                    vm.settings_preview_hover_space, PackAction::PreviewHoverSpace, previews_on);
         undim(faded);
         // 预览方式, 悬停延迟, 卡片尺寸 and 按住预览 belong to 悬停与空格预览,
@@ -301,7 +296,7 @@ void MainRenderer::DrawSettingsPacks(const WindowViewModel& vm, const D2D1_RECT_
                    pack_text::HoldTitle(), pack_text::HoldDesc(), &pack_text::HoldChoice, false);
         undim(faded);
         faded = dim(!previews_on);
-        switch_row(lay.preview_details_row, pack_text::DetailsChildTitle(), pack_text::DetailsChildDesc(),
+        switch_row(lay.preview_details_row, local_pack_text::DetailsChildTitle(), local_pack_text::DetailsChildDesc(),
                    vm.settings_preview_details, PackAction::PreviewDetails, previews_on);
         // 预览窗口: the size Space opens it at, Space on media, loop.
         text(pack_text::WindowSection(), lay.window_section);
