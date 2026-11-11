@@ -4,6 +4,7 @@
 #include "ui_renderer.h"
 #include "address_search_layout.h"
 #include "ui_renderer_internal.h"
+#include "ui_hit_test_local.h"
 #include "../common/localization.h"
 #include "tab_shape.h"
 #include "bloom_accent_picker.h"
@@ -107,8 +108,6 @@ HitTestResult MainRenderer::HitTest(const WindowViewModel& vm, const D2D1_RECT_F
     // Embedded hosts own the title strip and footer controls.
     if (embedded_ && (y < title_bar_height_ || y >= rect.bottom - status_height_)) return r;
 
-    // Selftests hit-test a renderer that owns no compositor; the layout helpers
-    // and text measurement below all take null for it.
     const auto layout_hit = PaneLayoutHit(vm, rect, x, y, scale_,
         compositor_ ? compositor_->DwriteFactory() : nullptr,
         compositor_ ? compositor_->SmallFormat() : nullptr);
@@ -595,8 +594,9 @@ HitTestResult MainRenderer::HitTest(const WindowViewModel& vm, const D2D1_RECT_F
                 if (ContainsPt(lay.tree_sticky_row, x, y)) {
                     r.region = HitTestResult::SettingsToggle; r.index = 79; return r;
                 }
-                if (ContainsPt(lay.folder_size_row, x, y)) {
-                    r.region = HitTestResult::SettingsToggle; r.index = 82; return r;
+                if (const int local_toggle = local_hit::SettingsToggleIndex(lay, x, y);
+                    local_toggle >= 0) {
+                    r.region = HitTestResult::SettingsToggle; r.index = local_toggle; return r;
                 }
                 if (ContainsPt(lay.vertical_tabs_row, x, y)) {
                     r.region = HitTestResult::SettingsToggle; r.index = 23; return r;
@@ -896,28 +896,8 @@ HitTestResult MainRenderer::HitTest(const WindowViewModel& vm, const D2D1_RECT_F
                     {&lay.loop_choice[1], PackAction::LoopAll},
                     {&lay.loop_choice[2], PackAction::LoopNone},
                 };
-                // 启用预览 is the gate: its children and the hover options they
-                // own are faded and inert while it is off, and the hover options
-                // also need 悬停与空格预览 itself.
-                const bool previews_on = vm.settings_preview_enabled;
                 for (const auto& [bounds, action] : pack_targets) {
-                    const int action_value = static_cast<int>(action);
-                    const bool preview_child = action == PackAction::PreviewHoverSpace ||
-                        action == PackAction::PreviewDetails;
-                    const bool hover_option =
-                        (action_value >= static_cast<int>(PackAction::TriggerHover) &&
-                         action_value <= static_cast<int>(PackAction::HoverSizeXLarge)) ||
-                        (action_value >= static_cast<int>(PackAction::HoldOff) &&
-                         action_value <= static_cast<int>(PackAction::HoldLong));
-                    // 预览窗口 rows belong to the gate only: they fade with it
-                    // but not with 悬停与空格预览.
-                    const bool window_option =
-                        (action_value >= static_cast<int>(PackAction::PreviewSizeFit) &&
-                         action_value <= static_cast<int>(PackAction::PreviewRememberSize)) ||
-                        (action_value >= static_cast<int>(PackAction::SpaceClose) &&
-                         action_value <= static_cast<int>(PackAction::LoopNone));
-                    if (!previews_on && (preview_child || hover_option || window_option)) continue;
-                    if (!vm.settings_preview_hover_space && hover_option) continue;
+                    if (!local_hit::PackActionEnabled(action, vm)) continue;
                     if (action == PackAction::Install && !pack_text::PrimaryEnabled(vm.settings_pack_media_available,
                         vm.settings_pack_media_installed, vm.settings_pack_installing)) continue;
                     if (action == PackAction::ImagesInstall && !pack_text::PrimaryEnabled(vm.settings_pack_images_available,
@@ -1497,8 +1477,7 @@ HitTestResult MainRenderer::HitTest(const WindowViewModel& vm, const D2D1_RECT_F
                                compositor_ ? compositor_->DwriteFactory() : nullptr,
                                compositor_ ? compositor_->SmallFormat() : nullptr,
                                compositor_, previewH, hitRects);
-            if (ContainsPt(hitRects.cloud_download, x, y)) { r.region = HitTestResult::DetailsCloudDownload; return r; }
-            if (ContainsPt(hitRects.size_calc, x, y)) { r.region = HitTestResult::DetailsSizeCalc; return r; }
+            if (local_hit::DetailsControlHit(hitRects, x, y, &r)) return r;
             if (ContainsPt(hitRects.preview_enable, x, y)) { r.region = HitTestResult::DetailsPreviewEnable; return r; }
             if (ContainsPt(hitRects.preview, x, y)) { r.region = HitTestResult::DetailsPreview; return r; }
             if (ContainsPt(hitRects.preview_toggle, x, y)) { r.region = HitTestResult::DetailsPreviewToggle; return r; }
