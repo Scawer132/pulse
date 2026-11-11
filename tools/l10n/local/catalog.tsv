@@ -1,0 +1,44 @@
+# Pulse local string overlay.
+#
+# tools/l10n/catalog.tsv belongs to upstream and is never edited here.
+# gen_strings.py merges this file on top of it:
+#   - a row whose name exists upstream overrides its zh/en/tw text;
+#     keep the upstream id_name and id so the merge is a text-only swap;
+#   - a row with a new name must use an id in 60000-60999.
+#
+# Columns: name<TAB>id_name<TAB>id<TAB>zh<TAB>en<TAB>tw
+
+# Preview copy overrides on upstream rows (ids 1990/1991).
+PreviewHide	IDS_PREVIEW_HIDE	1990	隐藏预览区	Hide preview area	
+PreviewShow	IDS_PREVIEW_SHOW	1991	显示预览区	Show preview area	
+
+# Local-only strings (ids 60000+).
+SettingsFolderSizes	IDS_SETTINGS_FOLDER_SIZES	60000	自动统计文件夹大小	Calculate folder sizes	
+SettingsFolderSizesDesc	IDS_SETTINGS_FOLDER_SIZES_DESC	60001	关闭后悬停预览、点击与详情面板都不再计算，可改在详情面板手动统计	Nothing computes folder sizes automatically; calculate on demand from the details panel	
+DetailsCalcSize	IDS_DETAILS_CALC_SIZE	60002	计算大小	Calculate size	
+PreviewEnableTitle	IDS_PREVIEW_ENABLE_TITLE	60003	启用预览	Enable previews	
+PreviewEnableDesc	IDS_PREVIEW_ENABLE_DESC	60004	关闭后，悬停、空格和详情面板都不再读取文件内容，只显示文件图标。	When off, hover, Space and the details panel stop reading file content and show the file icon instead.	
+PreviewHoverSpaceTitle	IDS_PREVIEW_HOVER_SPACE_TITLE	60005	悬停与空格预览	Hover and Space previews	
+PreviewHoverSpaceDesc	IDS_PREVIEW_HOVER_SPACE_DESC	60006	在文件上停留或按空格键查看内容。	Rest the pointer on a file or press Space to see its content.	
+PreviewDetailsTitle	IDS_PREVIEW_DETAILS_TITLE	60007	详情面板预览	Details panel preview	
+PreviewDetailsDesc	IDS_PREVIEW_DETAILS_DESC	60008	在详情面板上方显示文件内容；关闭后只显示文件图标。	Shows the file's content in the details panel; off shows only its file icon.	
+StatusHintIdleNoPreview	IDS_STATUS_HINT_IDLE_NO_PREVIEW	60009	Ctrl+F 筛选  ·  Ctrl+K 搜索	Ctrl+F filter  ·  Ctrl+K search	
+StatusHintIdleNoPreviewNoSearch	IDS_STATUS_HINT_IDLE_NO_PREVIEW_NO_SEARCH	60010	Ctrl+F 筛选	Ctrl+F filter	
+StatusHintSelectedNoPreview	IDS_STATUS_HINT_SELECTED_NO_PREVIEW	60011	Enter 打开  ·  F2 重命名	Enter open  ·  F2 rename	
+HintFolderSelNoPreview	IDS_HINT_FOLDER_SEL_NO_PREVIEW	60012	Enter 打开  ·  中键 后台新标签页	Enter open  ·  Middle-click new background tab	
+HintSearchResultSelNoPreview	IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW	60013	Enter 打开	Enter open	
+DetailsSysVersion	IDS_DETAILS_SYS_VERSION	60014	系统版本	System version	系統版本
+DetailsComputerName	IDS_DETAILS_COMPUTER_NAME	60015	计算机名	Computer name	電腦名稱
+DetailsProcessor	IDS_DETAILS_PROCESSOR	60016	处理器	Processor	處理器
+DetailsMemory	IDS_DETAILS_MEMORY	60017	内存	Memory	記憶體
+DetailsModel	IDS_DETAILS_MODEL	60018	设备型号	Model	裝置型號
+DetailsFirmware	IDS_DETAILS_FIRMWARE	60019	固件	Firmware	韌體
+DetailsUptime	IDS_DETAILS_UPTIME	60020	运行时间	Uptime	執行時間
+DetailsResolution	IDS_DETAILS_RESOLUTION	60021	分辨率	Display	解析度
+DetailsGraphics	IDS_DETAILS_GRAPHICS	60022	显卡	Graphics	顯示卡
+DetailsCores	IDS_DETAILS_CORES	60023	核心	Cores	核心
+DetailsSystemDrive	IDS_DETAILS_SYSTEM_DRIVE	60024	系统盘	System drive	系統磁碟
+DetailsUptimeDays	IDS_DETAILS_UPTIME_DAYS	60025	%llu 天 %llu 小时	%llu d %llu h	%llu 天 %llu 小時
+DetailsUptimeHours	IDS_DETAILS_UPTIME_HOURS	60026	%llu 小时 %llu 分钟	%llu h %llu min	%llu 小時 %llu 分鐘
+DetailsUptimeMinutes	IDS_DETAILS_UPTIME_MINUTES	60027	%llu 分钟	%llu min	%llu 分鐘
+DetailsCoresFormat	IDS_DETAILS_CORES_FORMAT	60028	%llu 核 / %llu 线程	%llu cores / %llu threads	%llu 核 / %llu 執行緒

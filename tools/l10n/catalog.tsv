@@ -214,8 +214,8 @@ SidebarHideSection	IDS_SIDEBAR_HIDE_SECTION	1985	隐藏此分区	Hide this secti
 // names what clicking the switch will do.
 PreviewToggle	IDS_PREVIEW_TOGGLE	1988	预览	Preview	預覽
 PreviewOff	IDS_PREVIEW_OFF	1989	预览已关闭	Preview off	預覽已關閉
-PreviewHide	IDS_PREVIEW_HIDE	1990	隐藏预览区	Hide preview area	
-PreviewShow	IDS_PREVIEW_SHOW	1991	显示预览区	Show preview area	
+PreviewHide	IDS_PREVIEW_HIDE	1990	关闭预览	Hide preview	關閉預覽
+PreviewShow	IDS_PREVIEW_SHOW	1991	开启预览	Show preview	開啟預覽
 // OneDrive account rows: "<account name> - <Personal|tenant>".
 OneDrivePersonal	IDS_ONEDRIVE_PERSONAL	1986	个人	Personal	個人
 PreviewCollapseDetails	IDS_PREVIEW_COLLAPSE_DETAILS	1692	收起详情	Collapse details	收起詳情
@@ -5117,32 +5117,51 @@ NativeExtensionSettingsChoose	IDS_NATIVE_EXTENSION_SETTINGS_CHOOSE	6387	选择�
 ArchivePluginRequired	IDS_ARCHIVE_PLUGIN_REQUIRED	6388	需要压缩包插件。请安装并启用支持此格式的原生增强包。	An archive plugin is required. Install and enable a native extension supporting this format.	需要壓縮檔外掛程式。請安裝並啟用支援此格式的原生增強套件。
 ArchivePluginMigrationTitle	IDS_ARCHIVE_PLUGIN_MIGRATION_TITLE	6389	压缩包增强功能已迁移	Archive features have moved to plugins	壓縮檔增強功能已移轉
 ArchivePluginMigrationBody	IDS_ARCHIVE_PLUGIN_MIGRATION_BODY	6390	旧的 7-Zip 下载包已停用。请安装并启用压缩包原生增强包以预览和解压 7z、RAR；内置 ZIP 功能不受影响。	The old 7-Zip download pack is retired. Install and enable the native archive extension to preview and extract 7z and RAR files. Built-in ZIP features remain available.	舊的 7-Zip 下載套件已停用。請安裝並啟用壓縮檔原生增強套件以預覽及解壓縮 7z、RAR；內建 ZIP 功能不受影響。
-SettingsFolderSizes	IDS_SETTINGS_FOLDER_SIZES	6391	自动统计文件夹大小	Calculate folder sizes	
-SettingsFolderSizesDesc	IDS_SETTINGS_FOLDER_SIZES_DESC	6392	关闭后悬停预览、点击与详情面板都不再计算，可改在详情面板手动统计	Nothing computes folder sizes automatically; calculate on demand from the details panel	
-DetailsCalcSize	IDS_DETAILS_CALC_SIZE	6393	计算大小	Calculate size	
-PreviewEnableTitle	IDS_PREVIEW_ENABLE_TITLE	6394	启用预览	Enable previews	
-PreviewEnableDesc	IDS_PREVIEW_ENABLE_DESC	6395	关闭后，悬停、空格和详情面板都不再读取文件内容，只显示文件图标。	When off, hover, Space and the details panel stop reading file content and show the file icon instead.	
-PreviewHoverSpaceTitle	IDS_PREVIEW_HOVER_SPACE_TITLE	6396	悬停与空格预览	Hover and Space previews	
-PreviewHoverSpaceDesc	IDS_PREVIEW_HOVER_SPACE_DESC	6397	在文件上停留或按空格键查看内容。	Rest the pointer on a file or press Space to see its content.	
-PreviewDetailsTitle	IDS_PREVIEW_DETAILS_TITLE	6398	详情面板预览	Details panel preview	
-PreviewDetailsDesc	IDS_PREVIEW_DETAILS_DESC	6399	在详情面板上方显示文件内容；关闭后只显示文件图标。	Shows the file's content in the details panel; off shows only its file icon.	
-StatusHintIdleNoPreview	IDS_STATUS_HINT_IDLE_NO_PREVIEW	6400	Ctrl+F 筛选  ·  Ctrl+K 搜索	Ctrl+F filter  ·  Ctrl+K search	
-StatusHintIdleNoPreviewNoSearch	IDS_STATUS_HINT_IDLE_NO_PREVIEW_NO_SEARCH	6401	Ctrl+F 筛选	Ctrl+F filter	
-StatusHintSelectedNoPreview	IDS_STATUS_HINT_SELECTED_NO_PREVIEW	6402	Enter 打开  ·  F2 重命名	Enter open  ·  F2 rename	
-HintFolderSelNoPreview	IDS_HINT_FOLDER_SEL_NO_PREVIEW	6403	Enter 打开  ·  中键 后台新标签页	Enter open  ·  Middle-click new background tab	
-HintSearchResultSelNoPreview	IDS_HINT_SEARCH_RESULT_SEL_NO_PREVIEW	6404	Enter 打开	Enter open	
-DetailsSysVersion	IDS_DETAILS_SYS_VERSION	6405	系统版本	System version	系統版本
-DetailsComputerName	IDS_DETAILS_COMPUTER_NAME	6406	计算机名	Computer name	電腦名稱
-DetailsProcessor	IDS_DETAILS_PROCESSOR	6407	处理器	Processor	處理器
-DetailsMemory	IDS_DETAILS_MEMORY	6408	内存	Memory	記憶體
-DetailsModel	IDS_DETAILS_MODEL	6409	设备型号	Model	裝置型號
-DetailsFirmware	IDS_DETAILS_FIRMWARE	6410	固件	Firmware	韌體
-DetailsUptime	IDS_DETAILS_UPTIME	6411	运行时间	Uptime	執行時間
-DetailsResolution	IDS_DETAILS_RESOLUTION	6412	分辨率	Display	解析度
-DetailsGraphics	IDS_DETAILS_GRAPHICS	6413	显卡	Graphics	顯示卡
-DetailsCores	IDS_DETAILS_CORES	6414	核心	Cores	核心
-DetailsSystemDrive	IDS_DETAILS_SYSTEM_DRIVE	6415	系统盘	System drive	系統磁碟
-DetailsUptimeDays	IDS_DETAILS_UPTIME_DAYS	6416	%llu 天 %llu 小时	%llu d %llu h	%llu 天 %llu 小時
-DetailsUptimeHours	IDS_DETAILS_UPTIME_HOURS	6417	%llu 小时 %llu 分钟	%llu h %llu min	%llu 小時 %llu 分鐘
-DetailsUptimeMinutes	IDS_DETAILS_UPTIME_MINUTES	6418	%llu 分钟	%llu min	%llu 分鐘
-DetailsCoresFormat	IDS_DETAILS_CORES_FORMAT	6419	%llu 核 / %llu 线程	%llu cores / %llu threads	%llu 核 / %llu 執行緒
+StoreBrowse	IDS_STORE_BROWSE	6391	浏览商店	Browse store	瀏覽商店
+StoreManage	IDS_STORE_MANAGE	6392	管理增强包	Manage packs	管理增強套件
+StoreIntro	IDS_STORE_INTRO	6393	发现社区增强包，为 Pulse 添加更多功能。	Discover community extensions that add more to Pulse.	探索社群增強套件，為 Pulse 加入更多功能。
+StoreTrust	IDS_STORE_TRUST	6394	社区增强包由各自发布者提供。原生扩展不在沙箱中运行；安装前请核对来源并审阅权限。	Community extensions are supplied by their publishers. Native code runs without a sandbox; verify the source and review permissions before installing.	社群增強套件由各自發行者提供。原生擴充功能不在沙箱中執行；安裝前請核對來源並審閱權限。
+StoreCommunity	IDS_STORE_COMMUNITY	6395	社区增强包	Community extensions	社群增強套件
+StoreIdle	IDS_STORE_IDLE	6396	尚未加载商店	Store not loaded	尚未載入商店
+StoreLoading	IDS_STORE_LOADING	6397	正在加载商店目录…	Loading store catalog…	正在載入商店目錄…
+StoreFailed	IDS_STORE_FAILED	6398	商店目录加载失败	Could not load store catalog	商店目錄載入失敗
+StoreOffline	IDS_STORE_OFFLINE	6399	离线目录	Offline catalog	離線目錄
+StoreOnline	IDS_STORE_ONLINE	6400	在线目录	Online catalog	線上目錄
+StoreEmpty	IDS_STORE_EMPTY	6401	目录中没有可显示的增强包	No extensions to show in this catalog	目錄中沒有可顯示的增強套件
+StoreRestart	IDS_STORE_RESTART	6402	增强包已更改。重启 Pulse 后生效。	Extensions have changed. Restart Pulse to apply.	增強套件已變更。重新啟動 Pulse 後生效。
+StoreOfficialManage	IDS_STORE_OFFICIAL_MANAGE	6403	官方预览、搜索和 AI 增强包与下载源设置 →	Official preview, search and AI packs and download sources →	官方預覽、搜尋及 AI 增強套件與下載來源設定 →
+ExtensionStoreTrustTitle	IDS_EXTENSION_STORE_TRUST_TITLE	6404	信任发布者	Trust publisher	信任發行者
+ExtensionStoreTrustMessage	IDS_EXTENSION_STORE_TRUST_MESSAGE	6405	此操作将信任下列发布者。信任不等于安装或允许运行原生代码。	This trusts the publisher below. Trust does not install extensions or permit native code to run.	此操作將信任下列發行者。信任不等於安裝或允許執行原生程式碼。
+ExtensionStoreTrustAccept	IDS_EXTENSION_STORE_TRUST_ACCEPT	6406	信任此发布者	Trust this publisher	信任此發行者
+ExtensionStoreInstallTitle	IDS_EXTENSION_STORE_INSTALL_TITLE	6407	审阅安装权限	Review installation permissions	檢閱安裝權限
+ExtensionStoreInstallMessage	IDS_EXTENSION_STORE_INSTALL_MESSAGE	6408	原生扩展可执行不受沙箱限制的代码。请仅安装你信任的扩展，并审阅新增权限。	Native extensions can execute code outside the sandbox. Only install extensions you trust and review the additional permissions.	原生擴充套件可執行不受沙箱限制的程式碼。請僅安裝你信任的擴充套件，並檢閱新增權限。
+ExtensionStoreInstallAccept	IDS_EXTENSION_STORE_INSTALL_ACCEPT	6409	同意并安装	Approve and install	同意並安裝
+ExtensionStoreNativeConsent	IDS_EXTENSION_STORE_NATIVE_CONSENT	6410	允许此扩展运行原生代码	Allow this extension to run native code	允許此擴充套件執行原生程式碼
+ExtensionStoreResourcesConsent	IDS_EXTENSION_STORE_RESOURCES_CONSENT	6411	同意上述新增权限	Approve the additional permissions above	同意上述新增權限
+ExtensionStoreEnableConsent	IDS_EXTENSION_STORE_ENABLE_CONSENT	6412	安装后启用（重启后生效）	Enable after installation (takes effect after restart)	安裝後啟用（重新啟動後生效）
+ExtensionStorePreparing	IDS_EXTENSION_STORE_PREPARING	6413	正在验证安装包…	Verifying package…	正在驗證安裝套件…
+ExtensionStoreInstalledRestart	IDS_EXTENSION_STORE_INSTALLED_RESTART	6414	安装已完成，请重新启动 Pulse。	Installation completed. Restart Pulse to apply it.	安裝已完成，請重新啟動 Pulse。
+ExtensionStoreIncompatible	IDS_EXTENSION_STORE_INCOMPATIBLE	6415	此版本与当前 Pulse 或 SDK 不兼容。	This release is incompatible with this Pulse or SDK version.	此版本與目前 Pulse 或 SDK 不相容。
+ExtensionStoreUnavailable	IDS_EXTENSION_STORE_UNAVAILABLE	6416	当前启动模式不支持写入扩展商店。	This launch mode cannot modify the extension store.	目前啟動模式不支援寫入擴充套件商店。
+ExtensionStoreConsentRequired	IDS_EXTENSION_STORE_CONSENT_REQUIRED	6417	请先勾选所需的原生代码和新增权限授权。	Select the required native-code and additional-permission approvals first.	請先勾選所需的原生程式碼及新增權限授權。
+StoreTitle	IDS_STORE_TITLE	6418	扩展商店	Extension store	擴充商店
+StoreInstalled	IDS_STORE_INSTALLED	6419	已安装扩展	Installed extensions	已安裝擴充套件
+StoreInstalledIntro	IDS_STORE_INSTALLED_INTRO	6420	查看已安装的原生扩展，包括已停用的扩展。变更将在重启 Pulse 后生效。	Review installed native extensions, including disabled extensions. Changes take effect after restarting Pulse.	檢視已安裝的原生擴充套件，包括已停用的擴充套件。變更將在重新啟動 Pulse 後生效。
+StoreInstalledLoading	IDS_STORE_INSTALLED_LOADING	6421	正在读取已安装扩展…	Loading installed extensions…	正在讀取已安裝擴充套件…
+StoreInstalledFailed	IDS_STORE_INSTALLED_FAILED	6422	无法读取已安装扩展	Could not load installed extensions	無法讀取已安裝擴充套件
+StoreInstalledEmpty	IDS_STORE_INSTALLED_EMPTY	6423	尚未安装原生扩展。你可以在浏览商店中查看可用扩展。	No native extensions are installed. Browse the store to discover available extensions.	尚未安裝原生擴充套件。你可以在瀏覽商店中檢視可用擴充套件。
+StoreExtensionEnabled	IDS_STORE_EXTENSION_ENABLED	6424	已启用	Enabled	已啟用
+StoreExtensionDisabled	IDS_STORE_EXTENSION_DISABLED	6425	已停用	Disabled	已停用
+StoreNativeCode	IDS_STORE_NATIVE_CODE	6426	原生代码 · 不在沙箱中运行	Native code · Not sandboxed	原生程式碼 · 不在沙箱中執行
+StoreUninstall	IDS_STORE_UNINSTALL	6427	卸载	Uninstall	解除安裝
+StoreRollback	IDS_STORE_ROLLBACK	6428	回滚	Roll back	復原版本
+StoreChangeTitle	IDS_STORE_CHANGE_TITLE	6429	审阅扩展变更	Review extension change	檢閱擴充套件變更
+StoreChangeApprove	IDS_STORE_CHANGE_APPROVE	6430	确认变更	Confirm change	確認變更
+StoreChangeMessage	IDS_STORE_CHANGE_MESSAGE	6431	此操作将在重新启动 Pulse 后生效。请审阅目标扩展与权限。	This change takes effect after restarting Pulse. Review the extension and permissions.	此操作將在重新啟動 Pulse 後生效。請檢閱目標擴充套件與權限。
+ExtensionPublishAlways	IDS_EXTENSION_PUBLISH_ALWAYS	6432	始终允许，不再询问	Always allow	一律允許，不再詢問
+StoreOfficial	IDS_STORE_OFFICIAL	6433	Pulse 官方	Pulse official	
+StoreUpdateItem	IDS_STORE_UPDATE_ITEM	6434	更新	Update	
+StoreCommunityEmpty	IDS_STORE_COMMUNITY_EMPTY	6435	还没有社区扩展	No community extensions yet	
+SetupEndRetry	IDS_SETUP_END_RETRY	6436	结束进程并重试	End processes and retry	結束處理程序並重試
+SetupEndConfirm	IDS_SETUP_END_CONFIRM	6437	将结束列表中可核验的占用进程，未保存的内容可能丢失。请先保存工作。是否继续？	End the verified processes in this list? Unsaved work may be lost. Save your work before continuing.	將結束清單中可核驗的占用處理程序，未儲存的內容可能遺失。請先儲存工作。是否繼續？
+SetupEndFailed	IDS_SETUP_END_FAILED	6438	部分进程未能结束，请查看安装日志或手动退出后重试。	Some processes could not be ended. Check the setup log or quit them manually and retry.	部分處理程序未能結束，請查看安裝記錄或手動結束後重試。

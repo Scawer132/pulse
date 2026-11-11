@@ -11,6 +11,11 @@
 
     Lines starting with '#' are comments (kept in string_ids.h near their row).
 
+    Local-only strings and local text overrides go to
+    tools/l10n/local/catalog.tsv (same columns, merged on top of catalog.tsv at
+    generation time). catalog.tsv itself tracks upstream and is never edited by
+    a local branch; see local/merge-policy.md.
+
 Commands:
     python tools/l10n/gen_strings.py extract   # bootstrap catalog.tsv from the
                                                # current string_ids.h / enum / .rcinc
@@ -44,6 +49,9 @@ from opencc import OpenCC
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 CATALOG = HERE / "catalog.tsv"
+LOCAL_CATALOG = HERE / "local" / "catalog.tsv"
+# Reserved for local-only strings so upstream's sequential ids never collide.
+LOCAL_ID_MIN, LOCAL_ID_MAX = 60000, 60999
 SNAPSHOT = ROOT / "build/agent_tmp/l10n_pre.json"
 
 IDS_H = ROOT / "src/common/string_ids.h"
@@ -230,10 +238,17 @@ def id_name_for(enum_name: str) -> str:
     return "IDS_" + snake
 
 
-def read_catalog():
+def _label(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def read_catalog(path=CATALOG):
     rows, seen_name, seen_ids_name, seen_id = [], set(), set(), {}
     pending_comments = []
-    for lineno, line in enumerate(CATALOG.read_text(encoding="utf-8").splitlines(), 1):
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         if not line.strip():
             pending_comments = []
             continue
@@ -243,18 +258,18 @@ def read_catalog():
             continue
         parts = line.split("\t")
         if len(parts) not in (5, 6):
-            sys.exit(f"{CATALOG.name}:{lineno}: expected 5-6 tab separated fields")
+            sys.exit(f"{_label(path)}:{lineno}: expected 5-6 tab separated fields")
         name, id_name, id_s, zh, en = parts[:5]
         tw = parts[5] if len(parts) == 6 else ""
         if not re.fullmatch(r"[A-Za-z_]\w*", name):
-            sys.exit(f"{CATALOG.name}:{lineno}: bad enum name {name!r}")
+            sys.exit(f"{_label(path)}:{lineno}: bad enum name {name!r}")
         if not re.fullmatch(r"IDS_[A-Z0-9_]+", id_name):
-            sys.exit(f"{CATALOG.name}:{lineno}: bad id name {id_name!r}")
+            sys.exit(f"{_label(path)}:{lineno}: bad id name {id_name!r}")
         if name in seen_name or id_name in seen_ids_name:
-            sys.exit(f"{CATALOG.name}:{lineno}: duplicate name/id_name")
+            sys.exit(f"{_label(path)}:{lineno}: duplicate name/id_name")
         id_ = int(id_s)
         if id_ in seen_id:
-            sys.exit(f"{CATALOG.name}:{lineno}: duplicate id {id_} (also {seen_id[id_]})")
+            sys.exit(f"{_label(path)}:{lineno}: duplicate id {id_} (also {seen_id[id_]})")
         seen_name.add(name)
         seen_ids_name.add(id_name)
         seen_id[id_] = name
@@ -262,6 +277,38 @@ def read_catalog():
             pass  # an always-empty placeholder row is allowed (composition glue)
         rows.append(Row(name, id_name, id_, zh, en, tw, pending_comments))
         pending_comments = []
+    return rows
+
+
+def read_overlay():
+    """catalog.tsv plus the optional tools/l10n/local/catalog.tsv overlay.
+
+    Overlay rows that reuse an upstream name replace that row's zh/en/tw text
+    (id_name and id must match, so the merge is a text-only swap); rows with a
+    new name are appended and must use an id in the reserved local range.
+    """
+    rows = read_catalog()
+    if not LOCAL_CATALOG.exists():
+        return rows
+    by_name = {row.name: row for row in rows}
+    local = read_catalog(LOCAL_CATALOG)
+    upstream_ids = {row.id for row in rows}
+    for row in local:
+        target = by_name.get(row.name)
+        if target is not None:
+            if row.id != target.id or row.id_name != target.id_name:
+                sys.exit(f"{_label(LOCAL_CATALOG)}: {row.name} overrides an upstream string; "
+                         f"reuse its id_name/id ({target.id_name}/{target.id})")
+            target.zh, target.en, target.tw = row.zh, row.en, row.tw
+            continue
+        if not LOCAL_ID_MIN <= row.id <= LOCAL_ID_MAX:
+            sys.exit(f"{_label(LOCAL_CATALOG)}: new string {row.name} needs an id in "
+                     f"{LOCAL_ID_MIN}-{LOCAL_ID_MAX} (got {row.id})")
+        if row.id in upstream_ids:
+            sys.exit(f"{_label(LOCAL_CATALOG)}: new string {row.name} reuses upstream id {row.id}")
+        row.comments = []
+        by_name[row.name] = row
+        rows.append(row)
     return rows
 
 
@@ -476,10 +523,22 @@ def extract():
         for p in problems[:40]:
             print("PROBLEM:", p)
         sys.exit(f"extract: {len(problems)} problems")
+    # Rows from the local overlay must not flow back into the upstream catalog:
+    # ids >= LOCAL_ID_MIN are overlay-only, and text overridden there is restored
+    # from the catalog being replaced (extract --force rewrites it).
+    overridden = {row.name for row in read_catalog(LOCAL_CATALOG)} if LOCAL_CATALOG.exists() else set()
+    previous = {row.name: row for row in read_catalog()} if CATALOG.exists() else {}
     rows = []
     for enum_name, ids_name in enum:
-        rows.append(Row(enum_name, ids_name, ids_by_name[ids_name],
-                        zh[ids_name], en[ids_name], tw[ids_name],
+        id_ = ids_by_name[ids_name]
+        if id_ >= LOCAL_ID_MIN:
+            continue
+        zh_text, en_text, tw_text = zh[ids_name], en[ids_name], tw[ids_name]
+        before = previous.get(enum_name)
+        if before is not None and enum_name in overridden:
+            zh_text, en_text, tw_text = before.zh, before.en, before.tw
+            print(f"note: {enum_name} is overridden by the local overlay; keeping the upstream text")
+        rows.append(Row(enum_name, ids_name, id_, zh_text, en_text, tw_text,
                         ids_comments.get(ids_name, []), ids_trailing.get(ids_name, "")))
     write_catalog(rows)
     snapshot = {
@@ -537,7 +596,7 @@ def main():
     if "parity" in sys.argv:
         parity()
         return
-    rows = read_catalog()
+    rows = read_overlay()
     outputs = build_outputs(rows)
     stale = [p for p, text in outputs.items()
              if not p.exists() or p.read_text(encoding="utf-8") != text]
