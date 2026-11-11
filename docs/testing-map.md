@@ -72,40 +72,40 @@ PULSE_SELFTEST_CASE=<case> .\build\pulse.exe --selftest
 | 模块 | 测试数 | 相关 target（前 6） |
 | --- | ---: | --- |
 | index | 74 | `pulse_search_audit_test`, `pulse_index_capacity_test`, `pulse_index_deep_path_test`, `pulse_index_delta_replay_test`†, `pulse_index_engine_test`†, `pulse_index_exclusion_concurrency_test` … +68 |
-| ops | 41 | `pulse_controlled_ops_test`, `pulse_delete_delivery_test`, `pulse_elevated_session_test`, `pulse_external_tasks_test`, `pulse_generated_output_test`, `pulse_ops_conflict_baseline_test` … +35 |
-| fs | 51 | `pulse_device_source_test`, `pulse_cloud_roots_test`, `pulse_listing_filter_perf_test`, `pulse_path_normalize_test`, `pulse_recycle_metadata_test`, `pulse_snapshot_store_test` … +45 |
-| ipc | 71 | `pulse_file_dialog_remote_multiselect_live_test`, `pulse_legacy_adapter_test`, `pulse_legacy_ansi_adapter_test`, `pulse_legacy_ansi_utf8_test`, `pulse_picker_host_test`, `pulse_file_dialog_activation_ex_test` … +65 |
+| ops | 42 | `pulse_controlled_ops_test`, `pulse_delete_delivery_test`, `pulse_elevated_session_test`, `pulse_external_tasks_test`, `pulse_generated_output_test`, `pulse_ops_conflict_baseline_test` … +36 |
+| fs | 53 | `pulse_device_source_test`, `pulse_cloud_roots_test`, `pulse_listing_filter_perf_test`, `pulse_path_normalize_test`, `pulse_recycle_metadata_test`, `pulse_snapshot_store_test` … +47 |
+| ipc | 72 | `pulse_file_dialog_remote_multiselect_live_test`, `pulse_legacy_adapter_test`, `pulse_legacy_ansi_adapter_test`, `pulse_legacy_ansi_utf8_test`, `pulse_picker_host_test`, `pulse_file_dialog_activation_ex_test` … +66 |
 | preview-host | 39 | `pulse_preview_ack_audit_test`, `pulse_preview_format_audit_test`, `pulse_preview_test`†, `pulse_audit_preview_test`, `pulse_document_completeness_test`†, `pulse_notebook_clipping_test` … +33 |
-| shell-bridge | 36 | `pulse_file_dialog_runtime_entry_test`, `pulse_picker_host_test`, `pulse_file_dialog_class_factory_test`, `pulse_picker_bridge_probe`, `pulse_file_dialog_activation_ex_test`, `pulse_file_dialog_iat_test` … +30 |
-| shell-host | 10 | `pulse_ctx_parity_probe`, `pulse_isolated_start_pin_test`, `pulse_ctx_handlers_test`, `pulse_app_controllers_test`†, `pulse_host_log_batch_test`, `pulse_packaged_ctx_test` … +4 |
+| shell-bridge | 37 | `pulse_file_dialog_runtime_entry_test`, `pulse_picker_host_test`, `pulse_file_dialog_class_factory_test`, `pulse_picker_bridge_probe`, `pulse_file_dialog_activation_ex_test`, `pulse_file_dialog_iat_test` … +31 |
+| shell-host | 11 | `pulse_ctx_parity_probe`, `pulse_isolated_start_pin_test`, `pulse_ctx_handlers_test`, `pulse_app_controllers_test`†, `pulse_host_log_batch_test`, `pulse_packaged_ctx_test` … +5 |
 | ai-host | 2 | `pulse_ai_authority_boundary_test`, `pulse_extension_developer_contract_test` |
-| common | 103 | `pulse_address_edit_stability_test`, `pulse_ai_assistant_settings_cache_test`, `pulse_ai_authority_boundary_test`, `pulse_ai_broker_test`†, `pulse_ai_chat_store_test`, `pulse_ai_json_test`† … +97 |
+| common | 115 | `pulse_extension_store_layout_test`, `pulse_address_edit_stability_test`, `pulse_ai_assistant_settings_cache_test`, `pulse_ai_authority_boundary_test`, `pulse_ai_broker_test`†, `pulse_ai_chat_store_test` … +109 |
 | dialog-launcher | 4 | `pulse_dialog_bundle_test`, `pulse_dialog_management_controller_test`, `pulse_managed_launch_profile_test`, `pulse_process_launch_path_test` |
 | picker-inprocess | 7 | `pulse_picker_activation_stack_test`, `pulse_picker_inprocess_test`, `pulse_picker_inprocess_v2_input_test`, `pulse_picker_inprocess_v2_test`, `pulse_picker_low_integrity_owner_test`, `pulse_picker_native_options_ui_test` … +1 |
 | extension-host | 2 | `pulse_extension_isolation_probe`, `pulse_extension_loopback_evidence_test` |
 | app-ai | 8 | `pulse_ai_broker_test`†, `pulse_ai_chat_store_test`, `pulse_ai_mcp_test`†, `pulse_extension_mcp_test`, `pulse_model_thinking_test`, `pulse_ai_assistant_settings_cache_test` … +2 |
 | app-picker | 3 | `pulse_picker_appearance_test`, `pulse_picker_bridge_model_test`, `pulse_picker_event_adapter_test` |
-| app-tags | 19 | `pulse_shell_tag_com_test`, `pulse_file_press_refresh_test`, `pulse_listing_filter_perf_test`, `pulse_listing_selection_identity_test`, `pulse_selection_caps_test`, `pulse_shell_tag_registry_test` … +13 |
+| app-tags | 19 | `pulse_shell_tag_com_test`, `pulse_file_press_refresh_test`, `pulse_listing_filter_perf_test`, `pulse_listing_selection_identity_test`, `pulse_selection_caps_test`, `pulse_session_window_test` … +13 |
 | app-search | 24 | `pulse_global_search_query_test`, `pulse_search_audit_test`, `pulse_advanced_search_query_test`, `pulse_file_press_refresh_test`, `pulse_listing_filter_perf_test`, `pulse_listing_selection_identity_test` … +18 |
 | app-network | 18 | `pulse_cloud_roots_test`, `pulse_network_connect_parse_test`, `pulse_app_controllers_test`†, `pulse_explorer_open_queue_test`, `pulse_external_open_wait_test`, `pulse_file_press_refresh_test` … +12 |
-| app-shell | 30 | `pulse_app_controllers_test`†, `pulse_explorer_open_queue_test`, `pulse_external_open_wait_test`, `pulse_host_window_test`, `pulse_open_handoff_test`, `pulse_persistence_test` … +24 |
-| app-preview | 3 | `pulse_media_props_batch_test`, `pulse_selection_input_test`, `pulse_tray_metadata_audit_test` |
-| app-files | 43 | `pulse_app_controllers_test`†, `pulse_batch_rename_present_test`, `pulse_folder_sizes_refactor_test`, `pulse_folder_sizes_experience_test`, `pulse_folder_sizes_navigation_test`, `pulse_folder_sizes_perf_test` … +37 |
+| app-shell | 34 | `pulse_app_controllers_test`†, `pulse_explorer_open_queue_test`, `pulse_external_open_wait_test`, `pulse_host_window_test`, `pulse_open_handoff_test`, `pulse_persistence_test` … +28 |
+| app-preview | 4 | `pulse_media_props_batch_test`, `pulse_media_video_props_test`, `pulse_selection_input_test`, `pulse_tray_metadata_audit_test` |
+| app-files | 44 | `pulse_app_controllers_test`†, `pulse_batch_rename_present_test`, `pulse_folder_sizes_refactor_test`, `pulse_dir_notify_async_test`, `pulse_folder_sizes_experience_test`, `pulse_folder_sizes_navigation_test` … +38 |
 | app-navigation | 21 | `pulse_pane_drop_test`, `pulse_session_window_test`, `pulse_app_controllers_test`†, `pulse_persistence_test`, `pulse_file_press_refresh_test`, `pulse_listing_filter_perf_test` … +15 |
 | app-settings | 3 | `pulse_app_controllers_test`†, `pulse_persistence_test`, `pulse_settings_transfer_test` |
-| app-system | 24 | `pulse_app_controllers_test`†, `pulse_ai_broker_test`†, `pulse_ai_mcp_test`†, `pulse_ai_pack_test`†, `pulse_content_pack_test`, `pulse_extension_mcp_test` … +18 |
+| app-system | 29 | `pulse_app_controllers_test`†, `pulse_ai_broker_test`†, `pulse_ai_mcp_test`†, `pulse_ai_pack_test`†, `pulse_content_pack_test`, `pulse_extension_mcp_test` … +23 |
 | app-window | 20 | `pulse_pane_drop_test`, `pulse_session_window_test`, `pulse_address_edit_stability_test`, `pulse_app_core_alias_test`, `pulse_content_progress_ui_test`†, `pulse_dialog_jump_popup_test` … +14 |
 | app-actions | 1 | `pulse_ai_authority_boundary_test` |
-| app-extensions | 45 | `pulse_extension_developer_cli_test`, `pulse_extension_development_reload_test`, `pulse_extension_runtime_test`, `pulse_extension_store_trust_test`, `pulse_native_package_runtime_test`, `pulse_extension_native_contract_test` … +39 |
+| app-extensions | 56 | `pulse_extension_store_live_probe`, `pulse_extension_developer_cli_test`, `pulse_extension_development_reload_test`, `pulse_extension_install_service_test`, `pulse_extension_runtime_test`, `pulse_extension_store_trust_test` … +50 |
 | app-menu | 7 | `pulse_app_controllers_test`†, `pulse_ctx_menu_controller_test`, `pulse_ctx_parity_probe`, `pulse_builtin_menu_coverage_test`, `pulse_audit_persistence_test`, `pulse_context_menu_identity_test` … +1 |
 | app-details | 7 | `pulse_change_tracking_polling_test`†, `pulse_file_press_refresh_test`, `pulse_listing_filter_perf_test`, `pulse_listing_selection_identity_test`, `pulse_pane_drop_test`, `pulse_selection_caps_test` … +1 |
 | app-toolbar | 1 | `pulse_toolbar_view_order_test` |
 | app-packs | 7 | `pulse_ai_broker_test`†, `pulse_ai_mcp_test`†, `pulse_ai_pack_test`†, `pulse_app_controllers_test`†, `pulse_content_pack_test`, `pulse_extension_mcp_test` … +1 |
 | ui-ai | 9 | `pulse_extension_control_identity_test`, `pulse_extension_panel_test`, `pulse_extension_tree_catalog_test`, `pulse_extension_tree_test`, `pulse_ai_rich_text_test`, `pulse_batch_rename_present_test` … +3 |
 | ui-dialogs | 21 | `pulse_file_picker_operations_test`, `pulse_conflict_dialog_test`, `pulse_delete_dialog_test`, `pulse_dialogs_test`†, `pulse_file_operation_authorization_dialog_test`, `pulse_locked_dialog_test` … +15 |
-| ui-preview | 27 | `pulse_preview_buffer_lifetime_test`, `pulse_preview_identity_test`, `pulse_preview_storage_test`, `pulse_document_image_view_test`, `pulse_markdown_image_uri_test`, `pulse_math_test` … +21 |
+| ui-preview | 28 | `pulse_preview_buffer_lifetime_test`, `pulse_preview_identity_test`, `pulse_preview_storage_test`, `pulse_document_image_view_test`, `pulse_markdown_image_uri_test`, `pulse_math_test` … +22 |
 | ui-pane | 36 | `pulse_preview_buffer_lifetime_test`, `pulse_preview_identity_test`, `pulse_preview_storage_test`, `pulse_preview_view_audit_test`, `pulse_search_highlight_render_test`, `pulse_wall_layout_source_test` … +30 |
-| ui-render | 61 | `pulse_conflict_dialog_test`, `pulse_delete_dialog_test`, `pulse_extension_control_identity_test`, `pulse_extension_panel_test`, `pulse_extension_tree_catalog_test`, `pulse_extension_tree_test` … +55 |
+| ui-render | 64 | `pulse_conflict_dialog_test`, `pulse_delete_dialog_test`, `pulse_extension_control_identity_test`, `pulse_extension_panel_test`, `pulse_extension_tree_catalog_test`, `pulse_extension_tree_test` … +58 |
 | ui-widgets | 29 | `pulse_dialogs_test`†, `pulse_file_picker_model_test`, `pulse_file_save_access_policy_test`, `pulse_file_save_revalidation_test`, `pulse_file_dialog_activation_ex_test`, `pulse_file_dialog_activation_test` … +23 |
 
 ## 手动探针（不是 pass/fail 测试）
@@ -116,6 +116,7 @@ PULSE_SELFTEST_CASE=<case> .\build\pulse.exe --selftest
 | `pulse_ctx_parity_probe` | app-menu, shell-host, app-shell |
 | `pulse_explorer_source_probe` | app-shell |
 | `pulse_extension_isolation_probe` | extension-host |
+| `pulse_extension_store_live_probe` | app-extensions, app-system, common |
 | `pulse_layered_child_style_probe` | — |
 | `pulse_native_empty_properties_probe` | — |
 | `pulse_native_file_dialog_events_probe` | — |

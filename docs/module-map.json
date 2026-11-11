@@ -4,7 +4,7 @@
   "upstream": "jimmgreen/pulse",
   "generated_by": "tools/ci/gen_module_map.py",
   "note": "Ownership is measured against main (upstream mirror). Line counts are not included; see the files.",
-  "source_files": 2304,
+  "source_files": 2375,
   "unmapped": [],
   "modules": [
     {
@@ -149,6 +149,7 @@
         "pulse_copy_pool_control_test",
         "pulse_copy_security_compatibility_test",
         "pulse_delete_preflight_test",
+        "pulse_dir_notify_async_test",
         "pulse_drive_eject_test",
         "pulse_duplicate_scan_test",
         "pulse_elevated_delete_test",
@@ -188,7 +189,7 @@
       ],
       "entry": "src/fs/fs_enum.h",
       "invariants": "快照按 generation 失效；UNC 与长路径走统一规范化。",
-      "files": 30,
+      "files": 31,
       "owner": "mixed",
       "local_files": [
         "src/fs/fs_enum.cpp"
@@ -206,10 +207,12 @@
         "pulse_common_persistence_test",
         "pulse_config_capacity_test",
         "pulse_dir_entry_extra_test",
+        "pulse_dir_notify_async_test",
         "pulse_directory_test",
         "pulse_enum_benchmark_audit_test",
         "pulse_enum_benchmark_test",
         "pulse_enum_cancel_test",
+        "pulse_enumeration_schedule_test",
         "pulse_file_press_refresh_test",
         "pulse_folder_sizes_baseline_test",
         "pulse_fs_audit_test",
@@ -336,7 +339,8 @@
         "pulse_start_pin_menu_test",
         "pulse_transfer_audit_test",
         "pulse_transport_reuse_test",
-        "pulse_win_e_broker_protocol_test"
+        "pulse_win_e_broker_protocol_test",
+        "pulse_win_e_startup_test"
       ]
     },
     {
@@ -443,6 +447,7 @@
         "pulse_file_dialog_auto_server_test",
         "pulse_file_dialog_client_state_test",
         "pulse_file_dialog_contract_test",
+        "pulse_file_dialog_deferred_history_test",
         "pulse_file_dialog_diagnostic_test",
         "pulse_file_dialog_properties_test",
         "pulse_file_dialog_runtime_policy_test",
@@ -469,7 +474,7 @@
       ],
       "entry": "src/shell_host/main.cpp",
       "invariants": "独立进程，崩溃不带走主窗口。",
-      "files": 11,
+      "files": 12,
       "owner": "upstream",
       "local_files": [],
       "tests": [
@@ -482,6 +487,7 @@
         "pulse_recycle_restore_index_test",
         "pulse_shell_context_lifetime_audit_test",
         "pulse_shell_worker_lifecycle_test",
+        "pulse_shell_working_directory_test",
         "pulse_system_ctx_packaged_test"
       ]
     },
@@ -534,6 +540,7 @@
         "src/common/string_ids.h"
       ],
       "tests": [
+        "pulse_extension_store_layout_test",
         "pulse_address_edit_stability_test",
         "pulse_ai_assistant_settings_cache_test",
         "pulse_ai_authority_boundary_test",
@@ -558,19 +565,29 @@
         "pulse_dialog_auto_registration_test",
         "pulse_elevated_transfer_protocol_test",
         "pulse_extension_audit_persistence_test",
+        "pulse_extension_catalog_client_test",
+        "pulse_extension_catalog_service_test",
+        "pulse_extension_catalog_test",
         "pulse_extension_control_identity_test",
         "pulse_extension_developer_cli_test",
         "pulse_extension_developer_contract_test",
         "pulse_extension_developer_tools_test",
         "pulse_extension_development_reload_test",
+        "pulse_extension_install_service_test",
+        "pulse_extension_install_transaction_test",
+        "pulse_extension_installed_store_test",
         "pulse_extension_manifest_test",
         "pulse_extension_mcp_test",
         "pulse_extension_native_contract_test",
+        "pulse_extension_package_archive_test",
+        "pulse_extension_package_download_test",
         "pulse_extension_package_signature_test",
         "pulse_extension_panel_test",
+        "pulse_extension_publisher_trust_test",
         "pulse_extension_resource_contract_test",
         "pulse_extension_resource_settings_test",
         "pulse_extension_runtime_test",
+        "pulse_extension_store_live_probe",
         "pulse_extension_store_trust_test",
         "pulse_extension_tree_catalog_test",
         "pulse_extension_tree_test",
@@ -636,7 +653,8 @@
         "pulse_shell_open_entry_test",
         "pulse_support_report_test",
         "pulse_virtual_disk_fault_test",
-        "pulse_waveform_cancel_audit_test"
+        "pulse_waveform_cancel_audit_test",
+        "pulse_win_e_startup_test"
       ]
     },
     {
@@ -653,7 +671,7 @@
       ],
       "entry": "src/setup/setup_ui.cpp",
       "invariants": "安装器需要管理员；卸载要移除 PulseIndex 服务。",
-      "files": 47,
+      "files": 50,
       "owner": "upstream",
       "local_files": [],
       "tests": []
@@ -830,7 +848,7 @@
       ],
       "entry": "src/bench/preview_test_main.cpp",
       "invariants": "测试是 [PASS]/[FAIL] 可执行文件，exit 0 为通过；未注册 CTest。",
-      "files": 617,
+      "files": 646,
       "owner": "mixed",
       "local_files": [
         "src/bench/app_controllers_test.cpp",
@@ -934,6 +952,7 @@
         "pulse_listing_filter_perf_test",
         "pulse_listing_selection_identity_test",
         "pulse_selection_caps_test",
+        "pulse_session_window_test",
         "pulse_shell_tag_registry_test",
         "pulse_common_persistence_test",
         "pulse_config_capacity_test",
@@ -944,7 +963,6 @@
         "pulse_places_persistence_audit_test",
         "pulse_places_save_order_test",
         "pulse_places_tag_recovery_test",
-        "pulse_session_window_test",
         "pulse_shell_tag_actions_test",
         "pulse_single_instance_endpoint_test",
         "pulse_tag_rule_roots_test"
@@ -1078,7 +1096,7 @@
       ],
       "entry": "src/app/shell_integration_registry.h",
       "invariants": "接管 Explorer 前要保留原窗口；失败必须可回退。",
-      "files": 67,
+      "files": 69,
       "owner": "mixed",
       "local_files": [
         "src/app/single_instance_coordinator.cpp"
@@ -1095,6 +1113,7 @@
         "pulse_single_instance_endpoint_test",
         "pulse_win_e_trace_test",
         "pulse_ctx_parity_probe",
+        "pulse_dir_notify_async_test",
         "pulse_entry_command_app_test",
         "pulse_explorer_source_probe",
         "pulse_external_open_test",
@@ -1107,13 +1126,16 @@
         "pulse_open_request_pipe_test",
         "pulse_runtime_log_test",
         "pulse_selection_caps_test",
+        "pulse_session_window_test",
         "pulse_shell_cache_readers_test",
         "pulse_shell_registry_watch_test",
         "pulse_shell_window_registry_retry_test",
         "pulse_system_ctx_packaged_test",
         "pulse_system_ctx_test",
         "pulse_win_e_broker_protocol_test",
-        "pulse_win_e_context_test"
+        "pulse_win_e_context_test",
+        "pulse_win_e_fast_entry_test",
+        "pulse_win_e_startup_test"
       ]
     },
     {
@@ -1140,7 +1162,7 @@
       ],
       "entry": "src/app/app_preview_policy.h",
       "invariants": "预览宿主未就绪时不得阻塞；开关关闭时不启动宿主。",
-      "files": 22,
+      "files": 24,
       "owner": "mixed",
       "local_files": [
         "src/app/app_hover_preview.cpp",
@@ -1151,6 +1173,7 @@
       ],
       "tests": [
         "pulse_media_props_batch_test",
+        "pulse_media_video_props_test",
         "pulse_selection_input_test",
         "pulse_tray_metadata_audit_test"
       ]
@@ -1214,6 +1237,7 @@
         "pulse_app_controllers_test",
         "pulse_batch_rename_present_test",
         "pulse_folder_sizes_refactor_test",
+        "pulse_dir_notify_async_test",
         "pulse_folder_sizes_experience_test",
         "pulse_folder_sizes_navigation_test",
         "pulse_folder_sizes_perf_test",
@@ -1225,6 +1249,7 @@
         "pulse_group_selection_plan_test",
         "pulse_listing_filter_perf_test",
         "pulse_media_folder_test",
+        "pulse_session_window_test",
         "pulse_virtual_worker_consumers_test",
         "pulse_ai_tools_test",
         "pulse_archive_plugin_migration_test",
@@ -1252,7 +1277,6 @@
         "pulse_rename_ops_test",
         "pulse_selection_caps_test",
         "pulse_selection_input_test",
-        "pulse_session_window_test",
         "pulse_tray_placement_test"
       ]
     },
@@ -1428,6 +1452,11 @@
         "pulse_app_catalog_test",
         "pulse_bitlocker_unlock_test",
         "pulse_content_progress_ui_test",
+        "pulse_extension_catalog_client_test",
+        "pulse_extension_catalog_service_test",
+        "pulse_extension_install_service_test",
+        "pulse_extension_package_download_test",
+        "pulse_extension_store_live_probe",
         "pulse_frame_pump_test",
         "pulse_frame_watch_test",
         "pulse_hot_entry_app_test",
@@ -1469,6 +1498,7 @@
         "src/app/window_*",
         "src/app/host_window*",
         "src/app/wndproc_guard*",
+        "src/app/dir_notify*",
         "src/app/dialog_*",
         "src/app/pane_layout*",
         "src/app/partial_redraw*",
@@ -1487,7 +1517,7 @@
       ],
       "entry": "src/app/app_state.h",
       "invariants": "UI 线程不做阻塞 IO；AppState 是唯一组合根。",
-      "files": 76,
+      "files": 77,
       "owner": "mixed",
       "local_files": [
         "src/app/app_commands.cpp",
@@ -1555,29 +1585,39 @@
         "原生面板"
       ],
       "globs": [
-        "src/app/extensions/**"
+        "src/app/extensions/**",
+        "src/app/extension_store_*"
       ],
       "entry": "src/app/extensions/native/command_contributions.h",
       "invariants": "扩展通过声明式清单与受控 API 接入。",
-      "files": 145,
+      "files": 169,
       "owner": "upstream",
       "local_files": [],
       "tests": [
+        "pulse_extension_store_live_probe",
         "pulse_extension_developer_cli_test",
         "pulse_extension_development_reload_test",
+        "pulse_extension_install_service_test",
         "pulse_extension_runtime_test",
         "pulse_extension_store_trust_test",
         "pulse_native_package_runtime_test",
+        "pulse_extension_install_transaction_test",
+        "pulse_extension_installed_store_test",
         "pulse_extension_native_contract_test",
+        "pulse_extension_package_download_test",
+        "pulse_extension_publisher_trust_test",
         "pulse_native_settings_pages_test",
         "pulse_native_ui_performance_test",
+        "pulse_extension_package_archive_test",
         "pulse_extension_transfer_preparation_test",
         "pulse_native_ui_model_catalog_test",
         "pulse_native_ui_test",
         "pulse_ai_mcp_test",
         "pulse_controlled_transfer_test",
+        "pulse_extension_catalog_service_test",
         "pulse_extension_developer_tools_test",
         "pulse_native_previews_test",
+        "pulse_extension_catalog_client_test",
         "pulse_extension_developer_contract_test",
         "pulse_native_context_test",
         "pulse_native_directories_test",
@@ -1587,6 +1627,7 @@
         "pulse_native_ui_model_test",
         "pulse_extension_audit_persistence_test",
         "pulse_extension_authorization_test",
+        "pulse_extension_catalog_test",
         "pulse_extension_control_identity_test",
         "pulse_extension_manifest_test",
         "pulse_extension_package_signature_test",
@@ -1595,6 +1636,7 @@
         "pulse_extension_resource_contract_test",
         "pulse_extension_resource_reference_test",
         "pulse_extension_resource_settings_test",
+        "pulse_extension_store_review_test",
         "pulse_extension_transfer_confirmation_test",
         "pulse_extension_transfer_snapshot_test",
         "pulse_extension_tree_catalog_test",
@@ -1781,7 +1823,7 @@
       ],
       "entry": "src/ui/ai_panel_view.h",
       "invariants": "面板只读模型，不直接改文件。",
-      "files": 42,
+      "files": 43,
       "owner": "mixed",
       "local_files": [
         "src/ui/tag_manager_panel.cpp"
@@ -1844,11 +1886,12 @@
         "src/ui/confirm_*",
         "src/ui/notification_toast*",
         "src/ui/picker_*",
-        "src/ui/snack_style*"
+        "src/ui/snack_style*",
+        "src/ui/form_dialog*"
       ],
       "entry": "src/ui/file_operation_dialog.h",
       "invariants": "弹层外壳与阴影走同一套原语（见 snack_style）。",
-      "files": 42,
+      "files": 44,
       "owner": "mixed",
       "local_files": [
         "src/ui/color_picker.cpp"
@@ -1907,7 +1950,7 @@
       ],
       "entry": "src/ui/quick_preview_window.cpp",
       "invariants": "预览帧与主窗口动画解耦；关闭即停宿主。",
-      "files": 55,
+      "files": 57,
       "owner": "mixed",
       "local_files": [
         "src/ui/quick_preview_window.cpp",
@@ -1928,6 +1971,7 @@
         "pulse_ffmpeg_playback_test",
         "pulse_playback_controls_test",
         "pulse_waveform_cancel_audit_test",
+        "pulse_extension_store_layout_test",
         "pulse_link_pill_test",
         "pulse_markdown_metadata_audit_test",
         "pulse_preview_command_test",
@@ -2050,6 +2094,8 @@
         "src/ui/ellipsis_*",
         "src/ui/recent_day*",
         "src/ui/drive_capacity*",
+        "src/ui/folder_thumbnail_resample*",
+        "src/ui/window_effect_support*",
         "src/ui/link_type*",
         "src/ui/preview_format_catalog*",
         "src/ui/known_extensions*",
@@ -2079,7 +2125,7 @@
       ],
       "entry": "src/ui/FluentTokens.h",
       "invariants": "颜色与几何 token 只从 Theme 取；不要在绘制里另造一套。",
-      "files": 71,
+      "files": 74,
       "owner": "mixed",
       "local_files": [
         "src/ui/thumbnail_cache.cpp",
@@ -2106,6 +2152,7 @@
         "pulse_dialogs_test",
         "pulse_extension_data_view_test",
         "pulse_file_picker_view_test",
+        "pulse_extension_store_layout_test",
         "pulse_document_image_view_test",
         "pulse_markdown_image_uri_test",
         "pulse_material_test",
@@ -2148,9 +2195,11 @@
         "pulse_reparse_entry_test",
         "pulse_search_enhancement_ui_test",
         "pulse_spring_motion_test",
+        "pulse_tab_width_fit_test",
         "pulse_thumbnail_cache_unit_test",
         "pulse_thumbnail_writer_test",
-        "pulse_toolbar_view_order_test"
+        "pulse_toolbar_view_order_test",
+        "pulse_window_effect_support_test"
       ]
     },
     {
@@ -3380,6 +3429,20 @@
       "owner": "upstream"
     },
     {
+      "name": "pulse_dir_notify_async_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-files",
+        "app-shell",
+        "fs",
+        "ops"
+      ],
+      "sources": 7,
+      "product_sources": 6,
+      "owner": "mixed"
+    },
+    {
       "name": "pulse_directory_test",
       "kind": "test",
       "gate": false,
@@ -3618,6 +3681,17 @@
       "owner": "upstream"
     },
     {
+      "name": "pulse_enumeration_schedule_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "fs"
+      ],
+      "sources": 1,
+      "product_sources": 0,
+      "owner": "upstream"
+    },
+    {
       "name": "pulse_explorer_open_queue_test",
       "kind": "test",
       "gate": false,
@@ -3661,6 +3735,44 @@
       ],
       "sources": 2,
       "product_sources": 1,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_catalog_client_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "app-system",
+        "common"
+      ],
+      "sources": 5,
+      "product_sources": 4,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_catalog_service_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "app-system",
+        "common"
+      ],
+      "sources": 6,
+      "product_sources": 5,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_catalog_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "common"
+      ],
+      "sources": 3,
+      "product_sources": 2,
       "owner": "upstream"
     },
     {
@@ -3762,6 +3874,43 @@
       "owner": "upstream"
     },
     {
+      "name": "pulse_extension_install_service_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "app-system",
+        "common"
+      ],
+      "sources": 10,
+      "product_sources": 9,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_install_transaction_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "common"
+      ],
+      "sources": 8,
+      "product_sources": 7,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_installed_store_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "common"
+      ],
+      "sources": 8,
+      "product_sources": 7,
+      "owner": "upstream"
+    },
+    {
       "name": "pulse_extension_isolation_probe",
       "kind": "probe",
       "gate": false,
@@ -3823,6 +3972,31 @@
       "owner": "upstream"
     },
     {
+      "name": "pulse_extension_package_archive_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "common"
+      ],
+      "sources": 6,
+      "product_sources": 5,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_package_download_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "app-system",
+        "common"
+      ],
+      "sources": 8,
+      "product_sources": 7,
+      "owner": "upstream"
+    },
+    {
       "name": "pulse_extension_package_signature_test",
       "kind": "test",
       "gate": false,
@@ -3847,6 +4021,18 @@
       ],
       "sources": 19,
       "product_sources": 18,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_publisher_trust_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "common"
+      ],
+      "sources": 7,
+      "product_sources": 6,
       "owner": "upstream"
     },
     {
@@ -3930,6 +4116,43 @@
       ],
       "sources": 9,
       "product_sources": 8,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_store_layout_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "ui-render",
+        "common",
+        "ui-preview"
+      ],
+      "sources": 9,
+      "product_sources": 7,
+      "owner": "mixed"
+    },
+    {
+      "name": "pulse_extension_store_live_probe",
+      "kind": "probe",
+      "gate": false,
+      "modules": [
+        "app-extensions",
+        "app-system",
+        "common"
+      ],
+      "sources": 13,
+      "product_sources": 12,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_extension_store_review_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-extensions"
+      ],
+      "sources": 1,
+      "product_sources": 0,
       "owner": "upstream"
     },
     {
@@ -4179,6 +4402,17 @@
       ],
       "sources": 13,
       "product_sources": 11,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_file_dialog_deferred_history_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "shell-bridge"
+      ],
+      "sources": 1,
+      "product_sources": 0,
       "owner": "upstream"
     },
     {
@@ -5472,8 +5706,19 @@
       "modules": [
         "app-preview"
       ],
-      "sources": 2,
-      "product_sources": 1,
+      "sources": 3,
+      "product_sources": 2,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_media_video_props_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-preview"
+      ],
+      "sources": 3,
+      "product_sources": 2,
       "owner": "upstream"
     },
     {
@@ -7475,17 +7720,18 @@
       "modules": [
         "app-navigation",
         "index",
+        "app-files",
         "app-search",
+        "app-tags",
         "app-window",
         "app-details",
-        "app-files",
         "app-network",
-        "app-tags",
+        "app-shell",
         "fs",
         "ui-pane"
       ],
-      "sources": 19,
-      "product_sources": 18,
+      "sources": 22,
+      "product_sources": 21,
       "owner": "mixed"
     },
     {
@@ -7693,6 +7939,17 @@
       "owner": "upstream"
     },
     {
+      "name": "pulse_shell_working_directory_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "shell-host"
+      ],
+      "sources": 1,
+      "product_sources": 0,
+      "owner": "upstream"
+    },
+    {
       "name": "pulse_sidebar_refresh_test",
       "kind": "test",
       "gate": false,
@@ -7837,6 +8094,17 @@
       ],
       "sources": 2,
       "product_sources": 1,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_tab_width_fit_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "ui-render"
+      ],
+      "sources": 1,
+      "product_sources": 0,
       "owner": "upstream"
     },
     {
@@ -8285,6 +8553,30 @@
       "owner": "upstream"
     },
     {
+      "name": "pulse_win_e_fast_entry_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-shell"
+      ],
+      "sources": 1,
+      "product_sources": 0,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_win_e_startup_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "app-shell",
+        "common",
+        "ipc"
+      ],
+      "sources": 1,
+      "product_sources": 0,
+      "owner": "upstream"
+    },
+    {
       "name": "pulse_win_e_trace_test",
       "kind": "test",
       "gate": false,
@@ -8304,6 +8596,17 @@
       ],
       "sources": 2,
       "product_sources": 1,
+      "owner": "upstream"
+    },
+    {
+      "name": "pulse_window_effect_support_test",
+      "kind": "test",
+      "gate": false,
+      "modules": [
+        "ui-render"
+      ],
+      "sources": 1,
+      "product_sources": 0,
       "owner": "upstream"
     },
     {
