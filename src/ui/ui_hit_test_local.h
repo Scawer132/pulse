@@ -1,15 +1,22 @@
 // ui_hit_test_local.h — Fork-only hit testing kept out of ui_hit_test.cpp.
 //
 // Include this right after "ui_renderer_internal.h" in the translation unit that
-// defines MainRenderer::HitTest: the layout structs read here (SettingsLayout and
-// the ContainsPt helper) are declared in that upstream header, one of them with
-// internal linkage, which rules out a .cpp of its own. Everything is inline, so
-// upstream's HitTest keeps one short call per hook and new local rows are added
-// in this file — not inside its if-chains (rules: local/merge-policy.md).
+// defines MainRenderer::HitTest: the layout struct read here (SettingsLayout) is
+// declared there. Everything is inline and reaches no internal-linkage helper, so
+// it stays a header rather than a .cpp of its own; upstream's HitTest keeps one
+// short call per hook and new local rows are added in this file — not inside its
+// if-chains (rules: local/merge-policy.md).
 
 #pragma once
 
 namespace pulse::ui::local_hit {
+
+// Same test as the layout helpers' ContainsPt, repeated here because those have
+// internal linkage: an inline function reaching into them would not be the same
+// definition in every translation unit.
+inline bool RectContains(const D2D1_RECT_F& rc, float x, float y) {
+    return x >= rc.left && x < rc.right && y >= rc.top && y < rc.bottom;
+}
 
 // Preview switches on the pack page. 启用预览 is the gate: its children (悬停与
 // 空格预览, 详情面板预览) and the hover options they own are faded and inert while
@@ -37,17 +44,17 @@ inline bool PackActionEnabled(PackAction action, const WindowViewModel& vm) {
 // Local settings rows upstream does not draw: returns the toggle id, or -1.
 // New local rows are added here instead of another branch in HitTest.
 inline int SettingsToggleIndex(const SettingsLayout& lay, float x, float y) {
-    if (ContainsPt(lay.folder_size_row, x, y)) return 82;
+    if (RectContains(lay.folder_size_row, x, y)) return 82;
     return -1;
 }
 
 // Local controls in the details panel well: 下载并预览 and 计算大小.
 inline bool DetailsControlHit(const DetailsHitRects& hit, float x, float y, HitTestResult* r) {
-    if (ContainsPt(hit.cloud_download, x, y)) {
+    if (RectContains(hit.cloud_download, x, y)) {
         r->region = HitTestResult::DetailsCloudDownload;
         return true;
     }
-    if (ContainsPt(hit.size_calc, x, y)) {
+    if (RectContains(hit.size_calc, x, y)) {
         r->region = HitTestResult::DetailsSizeCalc;
         return true;
     }
