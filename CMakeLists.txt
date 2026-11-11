@@ -21,6 +21,12 @@ option(PULSE_RELEASE_SYMBOLS "Generate matching PDBs for signed release archives
 # (app.json, session.json, places) and gives it a second single instance, so
 # both can run side by side. Local-only: never part of a shipped build.
 option(PULSE_LOCAL_PROFILE "Keep this build's state under %LOCALAPPDATA%\\Pulse-local" OFF)
+# Shown in About only. version.txt and every parser (update check, file version,
+# diagnostics) keep the plain upstream release number.
+set(PULSE_VERSION_DISPLAY "${PROJECT_VERSION}")
+if(PULSE_LOCAL_PROFILE)
+    string(APPEND PULSE_VERSION_DISPLAY "-local")
+endif()
 option(PULSE_WITH_IPO "Enable Release interprocedural optimization for pulse.exe" OFF)
 if(PULSE_WIN81_CANDIDATE AND MSVC_VERSION GREATER_EQUAL 1950)
     message(FATAL_ERROR "Windows 8.1 candidate builds require VS 2022 v143, not VS 2026")

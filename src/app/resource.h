@@ -33,8 +33,6 @@
 #define IDR_FLUENT_MUSIC_SVG 131
 #define IDR_FLUENT_DOCUMENTS_SVG 132
 #define IDR_FLUENT_WORKSPACE_SVG 133
-// OS logo for the details panel's 此电脑 card (not a Fluent glyph).
-#define IDR_WINDOWS_OS_SVG 134
 // Model service marks (assets/providers), Settings > AI 助手.
 #define IDR_PROVIDER_DEEPSEEK_SVG 140
 #define IDR_PROVIDER_QWEN_SVG 141
@@ -48,3 +46,8 @@
 #define IDR_PROVIDER_GEMINI_SVG 149
 #define IDR_PROVIDER_CLAUDE_SVG 150
 #define IDR_PROVIDER_MIMO_SVG 151
+
+// Local-only resources use the reserved 30000+ range so upstream's sequential
+// ids (currently up to 151) can never take the same number.
+// OS logo for the details panel's 此电脑 card (not a Fluent glyph).
+#define IDR_WINDOWS_OS_SVG 30000
