@@ -1,4 +1,4 @@
-// selftest_local.cpp — Fork-only --selftest cases (see selftest_1b2_local.h).
+// selftest_local_test.cpp — Fork-only --selftest cases (see selftest_1b2_local.h).
 //
 // These used to sit inside selftest_1b2.cpp. Keeping them here leaves upstream's
 // file with one Attach()/RunCase() pair and one call per extra assertion
@@ -54,7 +54,10 @@ void LogLine(const wchar_t* fmt, ...) {
 }
 
 void Check(bool cond, const wchar_t* name) {
-    if (!g_pass || !g_fail) return;
+    if (!g_pass || !g_fail) {
+        wprintf(L"[FAIL] %s (selftest counters not attached)\n", name);
+        std::abort();
+    }
     ++(cond ? *g_pass : *g_fail);
     LogLine(cond ? L"[PASS] %s\n" : L"[FAIL] %s\n", name);
 }

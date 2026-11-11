@@ -10,6 +10,8 @@
 // settings_layout_sections.h), so no namespace and no includes of its own: it
 // uses the layout struct and the drawing helpers already in scope.
 
+#pragma once
+
 namespace local_pack_text {
 
 inline const wchar_t* MasterTitle() { return l10n::Get(l10n::StringId::PreviewEnableTitle).c_str(); }

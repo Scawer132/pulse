@@ -470,7 +470,7 @@ void MainRenderer::DrawDetailsPanel(const WindowViewModel& vm, const D2D1_RECT_F
     };
 
     if (d.pc_card) {
-        y = DrawDetailsFactRows(dc, theme, d, panel, y);
+        y = DrawDetailsFactRows(dc, theme, d, panel, pad, y);
     } else if (d.multi_count > 1) {
         text(pulse::l10n::Get(pulse::l10n::StringId::Information),
              D2D1::RectF(panel.left + 12.0f * s, y, panel.right - 12.0f * s,

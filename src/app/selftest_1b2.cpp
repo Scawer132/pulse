@@ -8723,6 +8723,8 @@ void TestDetailsMeta() {
     Check(FormatAccessMask(FILE_GENERIC_WRITE, false) == L"写入", L"meta: mask write only");
     Check(FormatAccessMask(DELETE, false) == L"删除", L"meta: mask delete only");
     Check(FormatAccessMask(0, false) == L"特殊权限", L"meta: mask empty");
+    // Volume-root facts for the details panel (fork-only; see selftest_local_test.cpp).
+    selftest_local::CheckVolumeMeta();
 }
 
 void TestMoveTabRun() {
@@ -9684,7 +9686,7 @@ int RunSelfTest1B2() {
     g_log = _wfopen_s(&g_log_local, kLogPath.c_str(), L"w, ccs=UTF-8") == 0
         ? g_log_local : nullptr;
 
-    // Fork-only cases live in selftest_local.cpp; they report through these
+    // Fork-only cases live in selftest_local_test.cpp; they report through these
     // counters and the log opened above.
     selftest_local::Attach(&g_pass, &g_fail, g_log);
     wchar_t local_case[64]{};
@@ -9699,7 +9701,6 @@ int RunSelfTest1B2() {
                                 ARRAYSIZE(details_card_case)) &&
         wcscmp(details_card_case, L"details-meta") == 0) {
         TestDetailsMeta();
-        selftest_local::CheckVolumeMeta();
         LogLine(L"\n== details-meta: %d passed, %d failed ==\n", g_pass, g_fail);
         if (g_log) { fclose(g_log); g_log = nullptr; }
         return g_fail ? 1 : 0;

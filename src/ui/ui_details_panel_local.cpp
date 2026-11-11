@@ -232,11 +232,9 @@ void MainRenderer::DrawDetailsCloudWell(const WindowViewModel& vm, ID2D1DeviceCo
 }
 
 float MainRenderer::DrawDetailsFactRows(ID2D1DeviceContext* dc, const Theme& theme,
-                                        const DetailsPanelView& d, const D2D1_RECT_F& panel,
+                                        const DetailsPanelView& d, const D2D1_RECT_F& panel, float pad,
                                         float y) {
     const float s = scale_;
-    // DrawDetailsPanel's content padding: the same 12 dip it uses for its `pad`.
-    const float pad = 12.0f * s;
     // The system card: one fact per line, the key in the accent ink and the
     // value in a column shared by every row - a dense system sheet rather
     // than a label/value form. A value too long for its column continues on

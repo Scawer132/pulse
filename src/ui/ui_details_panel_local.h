@@ -11,6 +11,8 @@
 // scope. ui_details_panel.cpp includes that header first, so these names are
 // visible there as well.
 
+#pragma once
+
 // One line of details text broken at the last space that fits; prefers a
 // balanced second line over a lone orphan word ("... Laptop" / "GPU"). Returns
 // {text, ""} when it already fits. Used by the 此电脑 card's identity block and

@@ -530,7 +530,6 @@ float LayoutSettingsContent(SettingsLayout& l, const WindowViewModel& vm, float 
 namespace pack_text {
 inline const wchar_t* Title() { return l10n::Get(l10n::StringId::QuickPreview).c_str(); }
 inline const wchar_t* Intro() { return l10n::Get(l10n::StringId::HoverOverOrPressSpaceToPreviewFilesChooseHowExploreFormatSup).c_str(); }
-inline const wchar_t* TriggerSection() { return l10n::Get(l10n::StringId::PreviewTrigger).c_str(); }
 inline const wchar_t* TriggerTitle() { return l10n::Get(l10n::StringId::OpenPreviews).c_str(); }
 inline const wchar_t* TriggerDesc(int trigger) {
     return trigger == 1
