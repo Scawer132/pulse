@@ -28,7 +28,9 @@
         "src/index/index_client.cpp",
         "src/index/index_client.h",
         "src/index/index_config.cpp",
-        "src/index/index_payload.h"
+        "src/index/index_host.cpp",
+        "src/index/index_payload.h",
+        "src/index/index_volume_release.h"
       ],
       "tests": [
         "pulse_search_audit_test",
@@ -1780,8 +1782,10 @@
       "entry": "src/ui/ai_panel_view.h",
       "invariants": "面板只读模型，不直接改文件。",
       "files": 42,
-      "owner": "upstream",
-      "local_files": [],
+      "owner": "mixed",
+      "local_files": [
+        "src/ui/tag_manager_panel.cpp"
+      ],
       "tests": [
         "pulse_extension_control_identity_test",
         "pulse_extension_panel_test",
@@ -1845,8 +1849,10 @@
       "entry": "src/ui/file_operation_dialog.h",
       "invariants": "弹层外壳与阴影走同一套原语（见 snack_style）。",
       "files": 42,
-      "owner": "upstream",
-      "local_files": [],
+      "owner": "mixed",
+      "local_files": [
+        "src/ui/color_picker.cpp"
+      ],
       "tests": [
         "pulse_file_picker_operations_test",
         "pulse_conflict_dialog_test",
@@ -1904,7 +1910,8 @@
       "files": 55,
       "owner": "mixed",
       "local_files": [
-        "src/ui/quick_preview_window.cpp"
+        "src/ui/quick_preview_window.cpp",
+        "src/ui/ui_hover_preview.cpp"
       ],
       "tests": [
         "pulse_preview_buffer_lifetime_test",
@@ -2218,6 +2225,7 @@
       "files": 45,
       "owner": "mixed",
       "local_files": [
+        "src/ui/quick_access_editor.cpp",
         "src/ui/ui_details_panel.cpp"
       ],
       "tests": [
