@@ -17,16 +17,8 @@ endif()
 
 option(PULSE_WIN81_CANDIDATE "Require a Windows 8.1-capable release toolset" OFF)
 option(PULSE_RELEASE_SYMBOLS "Generate matching PDBs for signed release archives" OFF)
-# Keeps a local build out of the installed release's %LOCALAPPDATA%\Pulse
-# (app.json, session.json, places) and gives it a second single instance, so
-# both can run side by side. Local-only: never part of a shipped build.
-option(PULSE_LOCAL_PROFILE "Keep this build's state under %LOCALAPPDATA%\\Pulse-local" OFF)
-# Shown in About only. version.txt and every parser (update check, file version,
-# diagnostics) keep the plain upstream release number.
-set(PULSE_VERSION_DISPLAY "${PROJECT_VERSION}")
-if(PULSE_LOCAL_PROFILE)
-    string(APPEND PULSE_VERSION_DISPLAY "-local")
-endif()
+# Fork additions (local profile option, version suffix, extra targets).
+include(cmake/local.cmake)
 option(PULSE_WITH_IPO "Enable Release interprocedural optimization for pulse.exe" OFF)
 if(PULSE_WIN81_CANDIDATE AND MSVC_VERSION GREATER_EQUAL 1950)
     message(FATAL_ERROR "Windows 8.1 candidate builds require VS 2022 v143, not VS 2026")
@@ -236,8 +228,6 @@ add_executable(pulse_index_test
     src/index/network_index.cpp
     src/index/change_tracking.cpp)
 target_link_libraries(pulse_index_test PRIVATE shell32 mpr advapi32)
-
-add_executable(pulse_index_payload_test src/bench/index_payload_test.cpp)
 
 add_executable(pulse_index_shard_publish_test
     src/bench/index_shard_publish_test.cpp src/index/index_shard.cpp)
@@ -598,9 +588,7 @@ endif()
 list(APPEND PULSE_APP_SOURCES src/index/network_agent_client.cpp)
 if(PULSE_APP_SOURCES)
     add_executable(pulse WIN32 ${PULSE_APP_SOURCES})
-    if(PULSE_LOCAL_PROFILE)
-        target_compile_definitions(pulse PRIVATE PULSE_LOCAL_PROFILE=1)
-    endif()
+    pulse_local_profile(pulse)
     # The assistant's answers are Markdown, parsed by the same md4c as Quick Look.
     target_sources(pulse PRIVATE src/preview_host/markdown_document.cpp third_party/md4c/md4c.c)
     target_compile_definitions(pulse PRIVATE MD4C_USE_UTF16)
@@ -759,11 +747,7 @@ add_executable(pulse_index WIN32
 target_sources(pulse_index PRIVATE src/index/index_host.rc)
 target_link_options(pulse_index PRIVATE /MANIFEST:NO)
 set_target_properties(pulse_index PROPERTIES OUTPUT_NAME "Pulse.Index")
-if(PULSE_LOCAL_PROFILE)
-    # The helper this build spawns keeps its index (and network index) under the
-    # local profile folder instead of the installed copy's per-user index.
-    target_compile_definitions(pulse_index PRIVATE PULSE_LOCAL_PROFILE=1)
-endif()
+pulse_local_profile(pulse_index)
 target_link_libraries(pulse_index PRIVATE advapi32 shlwapi ole32 shell32 netapi32 mpr bcrypt pulse_localization
     pulse_crash_reporter pulse_text)
 pulse_add_version_resource(pulse_index "Pulse index host" "Pulse.Index" "Pulse.Index.exe")
@@ -1279,8 +1263,6 @@ add_executable(pulse_quick_jump_test src/bench/quick_jump_test.cpp src/app/doubl
 target_link_libraries(pulse_quick_jump_test PRIVATE user32 shell32 ole32 uuid)
 add_executable(pulse_frame_pump_test src/bench/frame_pump_test.cpp src/app/frame_pump.cpp)
 target_link_libraries(pulse_frame_pump_test PRIVATE dwmapi user32)
-add_executable(pulse_wndproc_guard_test src/bench/wndproc_guard_test.cpp src/app/wndproc_guard.cpp)
-target_link_libraries(pulse_wndproc_guard_test PRIVATE pulse_runtime_log)
 
 # Search enhancement: native pinyin data and per-user full-text index.
 # Mapping remains disabled by default. Only the short-lived task snapshot opts
